@@ -1,14 +1,8 @@
 const SerialPort = require("serialport");
 const EcrData = require('./EcrData');
+const ECR_CONFIG = require('./EcrConfig');
 
-let port = new SerialPort('/dev/tty.usbserial-FT0KF2AH', {
-  autoOpen: false,
-  baudRate: 9600,
-  dataBits: 7,
-  stopBits: 1,
-  parity: 'even',
-
-});
+let port = new SerialPort('/dev/tty.usbserial-FT0KF2AH', ECR_CONFIG.PORT_SETTING);
 
 port.on('error', function(err, callback) {
   console.log(err);
@@ -18,10 +12,9 @@ port.on('error', function(err, callback) {
 
 async function call() {
   try {
-    let data = EcrData.PackTransactionData();
+    let data = await EcrData.PackTransactionData();
     await sendData(port, data);
-    let response = await ReceiveData();
-    console.log(response.toString());
+    await ReceiveData();
     closePort();
   } catch(err) {
     port.emit('error', err)
@@ -44,7 +37,7 @@ function sendData(port, data) {
         if (err) {
           return reject(err);
         }
-        console.log(`send request data: ${data}`);
+        console.log(`send request data: ${data.toString('ascii')}`);
         console.log('Waiting ACK response...');
 
         // timeout60秒
@@ -56,12 +49,13 @@ function sendData(port, data) {
     });
 
     // check EDC 是否回傳ACK
+    // TODO 如果一秒內沒回回傳先繼續往下做
     let receivArray = []
 
     let ackHandler = (data) => {
       receivArray.push(data)
       if (Buffer.concat(receivArray).length === 2) {
-        if (EcrData.checkACK(data)) {
+        if (EcrData.checkACK(Buffer.concat(receivArray))) {
           port.removeListener('data', ackHandler);
           clearTimeout(timeout);
           console.log('EDC回傳ACK');
@@ -91,14 +85,30 @@ function ReceiveData() {
     let receivArray = []
 
     let responseHandler = (data) => {
-      receivArray.push(data)
+      receivArray.push(data);
+      console.log('=================')
+      console.log(data)
       if (data[data.length - 2] === 3) {
-        sendAck();
-        receivBuffer = Buffer.concat(receivArray)
-        console.log(receivBuffer.length);
-        port.removeListener('data', responseHandler)
-        clearTimeout(timeout);
-        return resolve(receivBuffer)
+        receivBuffer = Buffer.concat(receivArray);
+        console.log('EDC回傳response');
+        console.log(receivBuffer.slice(1, -2).toString());
+        console.log(receivBuffer.slice(1, -2).toString().length);
+        // check LRC
+        console.log('Check LRC ....')
+        if (checkLrc(receivBuffer.slice(1, -1), receivBuffer[receivBuffer.length - 1])) {
+          // 移除監聽與timeout
+          port.removeListener('data', responseHandler)
+          clearTimeout(timeout);
+          sendAck();
+          console.log('LRC correct');
+          return resolve();
+        } else {
+          // TODO retry 3次
+          sendNak();
+          console.log('LRC wrong!');
+          receivArray = []
+          // return reject('LRC wrong!')
+        }
       }
     }
     port.on('data', responseHandler);
@@ -112,6 +122,23 @@ function sendAck() {
   port.write(data, (err) => {
 
   })
+}
+
+// 回傳NAK
+function sendNak() {
+  let nak = Buffer.from([21]);
+  data = Buffer.concat([nak, nak])
+  port.write(data, (err) => {
+
+  })
+}
+
+function checkLrc(buffer, receiveLrc) {
+  let lrc = 0;
+  for(byte of buffer) {
+    lrc ^= byte
+  }
+  return (lrc == receiveLrc);
 }
 
 function closePort() {
@@ -133,9 +160,7 @@ async function test() {
   
 }
 
-test().then(() => {
-  test();
-}).catch((err) => console.log(err))
+test().catch((err) => console.log(err))
 
 
 // console.log(Buffer.from([6]).readUIntBE(0, 1))
