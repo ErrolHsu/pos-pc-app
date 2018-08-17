@@ -14,10 +14,11 @@ async function call() {
   try {
     let data = await EcrData.PackTransactionData();
     await sendData(port, data);
-    await ReceiveData();
+    let responseObject = await ReceiveData();
     closePort();
+    return Promise.resolve(responseObject);
   } catch(err) {
-    port.emit('error', err)
+    port.emit('error', err);
     return Promise.reject(err);
   }
 }
@@ -55,7 +56,7 @@ function sendData(port, data) {
     let ackHandler = (data) => {
       receivArray.push(data)
       if (Buffer.concat(receivArray).length === 2) {
-        if (EcrData.checkACK(Buffer.concat(receivArray))) {
+        if (checkAck(Buffer.concat(receivArray))) {
           port.removeListener('data', ackHandler);
           clearTimeout(timeout);
           console.log('EDC回傳ACK');
@@ -91,17 +92,18 @@ function ReceiveData() {
       if (data[data.length - 2] === 3) {
         receivBuffer = Buffer.concat(receivArray);
         console.log('EDC回傳response');
-        console.log(receivBuffer.slice(1, -2).toString());
-        console.log(receivBuffer.slice(1, -2).toString().length);
         // check LRC
         console.log('Check LRC ....')
         if (checkLrc(receivBuffer.slice(1, -1), receivBuffer[receivBuffer.length - 1])) {
+          let responseStr = receivBuffer.slice(1, -2).toString('ascii')
           // 移除監聽與timeout
           port.removeListener('data', responseHandler)
           clearTimeout(timeout);
           sendAck();
           console.log('LRC correct');
-          return resolve();
+          // 解析 response
+          responseObject = EcrData.parseResponse(responseStr)
+          return resolve(responseObject);
         } else {
           // TODO retry 3次
           sendNak();
@@ -133,12 +135,18 @@ function sendNak() {
   })
 }
 
+// 確認回傳的LRC正確
 function checkLrc(buffer, receiveLrc) {
   let lrc = 0;
   for(byte of buffer) {
     lrc ^= byte
   }
   return (lrc == receiveLrc);
+}
+
+// 確認收到ACK
+function checkAck(response) {
+  return (response.readUIntBE(0,1) === 6 && response.readUIntBE(1,1) === 6)
 }
 
 function closePort() {

@@ -13,7 +13,7 @@ let TransactionData = {
   // 交易別(Transaction Type), length:2
   transType: buildEmptyString(2),
   // 銀行別(Host ID), length:2
-  hostId: buildEmptyString(2),
+  hostID: buildEmptyString(2),
   // 端末機簽單序號(Receipt No)：由端末機產生, length:6
   receiptNo: buildEmptyString(6),
   // 信用卡卡號(Card Number)：由端末機回傳,左靠右補空白,除前6 碼及後4 碼顯示外,其餘用*隱藏, length:19
@@ -31,7 +31,7 @@ let TransactionData = {
   // 通訊回應碼(Response Code)：由端末機回傳, length:4
   ecrResponseCode: buildEmptyString(4),
   // 端末機代號(Terminal ID)：由端末機回傳, length:8
-  terminalId: buildEmptyString(8),
+  terminalID: buildEmptyString(8),
   // 銀行交易序號(Reference No)：一般交易由端末機回傳，退貨須由收銀機傳過來, length:12
   referenceNo: buildEmptyString(12),
   // 分期產品代號(Product Code)：7 碼數字，不傳送時必須填滿空白, length:7
@@ -45,7 +45,7 @@ let TransactionData = {
   // 折抵金額(Redeem Amt)：右靠左補0,無小數位, length:10
   redeemAmt: buildEmptyString(10),
   // 櫃號(Store ID)：20 碼任意，不傳送時必須填滿空白, length:20
-  storeId: buildEmptyString(20),
+  storeID: buildEmptyString(20),
   // 讀取卡號的交易別 (SALE 01, REFUND02)(讀取卡號資料須送此欄位)
   startTransType: buildEmptyString(2),
   // 電子發票加密卡號(左靠右補空白)
@@ -137,10 +137,6 @@ function buildEmptyString(length) {
   return str
 }
 
-function checkACK(response) {
-  return (response.readUIntBE(0,1) === 6 && response.readUIntBE(1,1) === 6)
-}
-
 function getData() {
   return new Promise((resolve, reject) => {
     let p = path.resolve(__dirname, '../in.dat')
@@ -154,8 +150,51 @@ function getData() {
   });
 };
 
+// parse response
+// data 為 600byte string
+function parseResponse(data) {
+  let responseObject = {
+    transType: data.substring(0, 2),
+    hostID: data.substring(2, 4),
+    receiptNo: data.substring(4, 10),
+    cardNumber: data.substring(10, 29),
+    expirationDate: data.substring(29, 33),
+    transAmount: data.substring(33, 45),
+    transDate: data.substring(45, 51),
+    transTime: data.substring(51, 57),
+    approvalCode: data.substring(57, 63),
+    ecrResponseCode: data.substring(63, 67),
+    terminalID: data.substring(67, 75),
+    referenceNo: data.substring(75, 87),
+    productCode: data.substring(87, 94),
+    installmentPeriod: data.substring(94, 96),
+    downPayment: data.substring(96, 104),
+    installmentPayment: data.substring(104, 112),
+    redeemAmt: data.substring(112, 122),
+    storeID: data.substring(122, 142),
+    startTransType: data.substring(142, 144),
+    invoiceEncryptionCardNo: data.substring(144, 204),
+    orderNumber: data.substring(204, 224),
+    orderInfo: data.substring(224, 374),
+    codeIndex: data.substring(374, 376),
+    eCouponsProductCode: data.substring(376, 401),
+    eCouponsExpireDateTime: data.substring(401, 415),
+    eCouponsRedeemDateTime: data.substring(415, 429),
+    eCouponsRedeemBalance: data.substring(429, 432),
+    ticketType: data.substring(432, 433),
+    ticketCardNumber: data.substring(433, 452),
+    ticketReferenceNumber: data.substring(452, 462),
+    ticketBonusAdd: data.substring(462, 472),
+    ticketBonusDeduct: data.substring(472, 482),
+    ticketBonusAccumulation: data.substring(482, 492),
+    ticketBalance: data.substring(492, 502),
+    reserve: data.substring(502, 599),
+  };
+  return responseObject;
+};
+
 exports.PackTransactionData = PackTransactionData;
-exports.checkACK = checkACK;
+exports.parseResponse = parseResponse;
 
 // for test
 exports.generateTestData = generateTestData;
