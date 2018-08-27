@@ -191,26 +191,28 @@ function closePort() {
 }
 
 ////////////////////////////
-async function test() {
-  try {
-    let transaction = new Transaction();
-    transaction.refund('000000110100', '123456', 'reference012');
-    console.log(transaction.data)
-    let data = await transaction.PackTransactionData();
-    let response = await call(data);
-    console.log('End')
-    return Promise.resolve(response);
-  } catch(err) {
-    return Promise.reject(`ERROR!!!!! ${err}`);
-  }
+// async function test() {
+//   try {
+//     let transaction = new Transaction();
+//     transaction.refund('000000110100', '123456', 'reference012');
+//     console.log(transaction.data)
+//     let data = await transaction.PackTransactionData();
+//     let response = await call(data);
+//     console.log('End')
+//     return Promise.resolve(response);
+//   } catch(err) {
+//     return Promise.reject(`ERROR!!!!! ${err}`);
+//   }
   
-}
+// }
 
-test(
+// test(
 
-).then((response) => {
-  console.log(response.data)
-}).catch((err) => console.log(err))
+// ).then((response) => {
+//   console.log(response.data)
+// }).catch((err) => console.log(err))
 
 
 // console.log(Buffer.from([6]).readUIntBE(0, 1))
+
+exports.call = call;
