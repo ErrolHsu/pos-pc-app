@@ -16,7 +16,7 @@ class Transaction {
   }
 
   // 打包交易資料
-  async PackTransactionData() {
+  PackTransactionData() {
     console.log('Preparing transaction data...')
     const data_str = this.dataToString();
     const data_buffer = Buffer.from(data_str, 'ascii');

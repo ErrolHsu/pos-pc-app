@@ -1,30 +1,35 @@
 const express = require('express');
 const app = express();
-const port = 3000;
 const ecr = require('./ECR-js/main');
+const ECR_CONFIG = require('./ECR-js/EcrConfig');
 const { Transaction } = require('./ECR-js/EcrData');
+const transactionHandler = require('./middleware/transaction_handler');
 
 // parse request body json
 // app.use(express.logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// 決定交易種類
+app.use(transactionHandler);
+
+// 
+app.use(function(err, req, res, next) {
+  console.error(err);
+  res.status(500).send(err);
+});
+
 
 app.get('/', (req, res) => {
-  let transaction = new Transaction();
-  transaction.refund('000000110100', '123456', 'reference012');
-  console.log(transaction.data)
+  console.log('dsd')
+  let transaction = req.transaction;
   let data = transaction.PackTransactionData();
+
   ecr.call(data).then((response) => {
     res.send(response.toString())
   }).catch((err) => {
-    console.log(transaction.data)
     res.send(err.toString())
   });
 });
 
-
-
-
-
-app.listen(port, () => console.log(`listening on port ${port}`) )
+app.listen(ECR_CONFIG.port, () => console.log(`listening on port ${ECR_CONFIG.port}`) )

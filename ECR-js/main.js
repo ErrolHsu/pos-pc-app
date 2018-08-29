@@ -5,7 +5,7 @@ const ECR_CONFIG = require('./EcrConfig');
 let port = new SerialPort('/dev/tty.usbserial-FT0KF2AH', ECR_CONFIG.PORT_SETTING);
 
 port.on('error', function(err, callback) {
-  console.log(err);
+  console.log(err.stack);
   closePort();
   callback && callback();
 })
