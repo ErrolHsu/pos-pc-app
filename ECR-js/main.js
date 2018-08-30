@@ -40,27 +40,30 @@ async function sendData(port, data) {
         console.log(`send request data: ${data.toString('ascii')}`);
         console.log('Waiting ACK response...');
 
-        // timeout60秒
+        // 如果一秒內沒收到ACK/NAK先繼續往下做
         timeout = setTimeout(() => {
-          reject('操作逾時');
-        }, 60000)
-
+          console.log('ACK miss...')
+          // 移除 ackHandler
+          port.removeListener('data', ackHandler);
+          return resolve();
+        }, 1000);
       });
     });
 
     // check EDC 是否回傳ACK
-    // TODO 如果一秒內沒回回傳先繼續往下做
     let receiveArray = []
 
     let ackHandler = (data) => {
       receiveArray.push(data)
       if (Buffer.concat(receiveArray).length === 2) {
         if (checkAck(Buffer.concat(receiveArray))) {
+          // 移除監聽與timeout
           port.removeListener('data', ackHandler);
           clearTimeout(timeout);
           console.log('EDC回傳ACK');
           return resolve('Receive ACK');
         } else {
+          // 移除監聽與timeout
           port.removeListener('data', ackHandler);
           clearTimeout(timeout);
           console.log(receiveArray);
@@ -76,20 +79,20 @@ async function sendData(port, data) {
 // 接收端末機(EDC) response
 function ReceiveData() {
   return new Promise((resolve, reject) => {
-    console.log('等待交易結果...')
+    console.log('等待交易結果...');
     // timeout60秒
     let timeout = setTimeout(() => {
       return reject('操作逾時');
-    }, 60000)
+    }, 60000);
 
-    let receiveArray = []
-    let retry = 0
+    let receiveArray = [];
+    let retry = 0;
 
     // TODO
     async function responseHandler(data) {
       try {
         receiveArray.push(data);
-        console.log(data)
+        console.log(data);
         // receive data until ETX
         if (data[data.length - 2] === 3) {
           receiveBuffer = Buffer.concat(receiveArray);
@@ -99,23 +102,23 @@ function ReceiveData() {
           if (checkLrc(receiveBuffer) && checkDataLength(receiveBuffer)) {
             console.log('LRC correct');
             console.log('Data length correct');
-            let responseStr = receiveBuffer.slice(1, -2).toString('ascii')
+            let responseStr = receiveBuffer.slice(1, -2).toString('ascii');
             // 移除監聽與timeout
-            port.removeListener('data', responseHandler)
+            port.removeListener('data', responseHandler);
             clearTimeout(timeout);
             await sendAck();
             // 解析 response
             transaction_response = new Transaction();
-            transaction_response.parseResponse(responseStr)
+            transaction_response.parseResponse(responseStr);
             return resolve(transaction_response);
           } else {;
             await sendNak();
-            console.log('LRC或資料長度錯誤，重新接收資料...')
-            retry += 1
-            receiveArray = []
+            console.log('LRC或資料長度錯誤，重新接收資料...');
+            retry += 1;
+            receiveArray = [];
             if (retry === 2) {
               await sendNak();
-              port.removeListener('data', responseHandler)
+              port.removeListener('data', responseHandler);
               clearTimeout(timeout);
               return reject('LRC或資料長度錯誤');
             }
@@ -133,7 +136,7 @@ function ReceiveData() {
 function sendAck() {
   return new Promise((resolve, reject) => {
     let ack = Buffer.from([6]);
-    data = Buffer.concat([ack, ack])
+    data = Buffer.concat([ack, ack]);
     port.write(data, (err) => {
       if (err) {
         return reject(err);
@@ -147,7 +150,7 @@ function sendAck() {
 function sendNak() {
   return new Promise((resolve, reject) => {
     let nak = Buffer.from([21]);
-    data = Buffer.concat([nak, nak])
+    data = Buffer.concat([nak, nak]);
     port.write(data, (err) => {
       if (err) {
         return reject(err);
@@ -163,10 +166,10 @@ function checkLrc(receiveBuffer) {
   let data = receiveBuffer.slice(1, -1);
   let lrc = 0;
 
-  console.log(`EDC回傳Lrc ${receiveLrc}`)
+  console.log(`EDC回傳Lrc ${receiveLrc}`);
 
   for(byte of data) {
-    lrc ^= byte
+    lrc ^= byte;
   }
   console.log(`Lrc should be ${lrc}`)
   return (lrc === receiveLrc);
@@ -174,13 +177,13 @@ function checkLrc(receiveBuffer) {
 
 // 確認資料長度正確
 function checkDataLength(data) {
-  console.log(`Data length is ${data.length}`)
-  return data.length === 603
+  console.log(`Data length is ${data.length}`);
+  return data.length === 603;
 }
 
 // 確認收到ACK
 function checkAck(response) {
-  return (response.readUIntBE(0,1) === 6 && response.readUIntBE(1,1) === 6)
+  return (response.readUIntBE(0,1) === 6 && response.readUIntBE(1,1) === 6);
 }
 
 function closePort() {
