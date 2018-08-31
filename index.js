@@ -19,13 +19,13 @@ app.use(function(err, req, res, next) {
   res.status(500).send(err);
 });
 
-
 app.get('/', (req, res) => {
   let transaction = req.transaction;
   let data = transaction.PackTransactionData();
 
   ecr.call(data).then((response) => {
-    res.send(response.toString());
+    // TODO 根據卡機response code 來回傳response
+    res.send(JSON.stringify(response.data));
   }).catch((err) => {
     res.send(err.toString());
   });

@@ -178,11 +178,14 @@ class Transaction {
   }
 
   /****    Transaction Type     ***/
-  // TODO 選填參數，要留空
   sale(amount, storeId) {
-    // TransactionData.transType
     this.data.transType = '01';
-    this.data.transAmount = '000000000100';
+    // this.data.transAmount = '000000000100';
+    this.data.transAmount = amount;
+    // 選填
+    if(storeId) {
+      this.data.storeId = storeId;
+    }
   }
 
   refund(amount, approvalCode, referenceNo, storeId) {
@@ -192,7 +195,9 @@ class Transaction {
     this.data.approvalCode = approvalCode;
     this.data.referenceNo = referenceNo;
     // 選填
-    // this.data.storeId = storeId; 
+    if(storeId) {
+      this.data.storeId = storeId;
+    }
   }
 
   setTransType() {

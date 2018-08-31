@@ -15,12 +15,12 @@ function generateTrasaction(params) {
     case 'sale':
       checkParams();
       console.log(`${params.type} 交易`)
-      transaction.sale();
+      transaction.sale(params.amount);
       break;
     case 'refund':
       checkParams();
       console.log(`${params.type} 交易`)
-      transaction.refund('000000000100', '123451', 'reference012');
+      transaction.refund('000000002100', '123451', 'reference012');
       break;
     default:
       console.log(`未知交易`)

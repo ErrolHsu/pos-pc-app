@@ -3,9 +3,11 @@ const { Transaction } = require('./EcrData');
 const ECR_CONFIG = require('./EcrConfig');
 
 let port = new SerialPort('/dev/tty.usbserial-FT0KF2AH', ECR_CONFIG.PORT_SETTING);
+let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 port.on('error', function(err, callback) {
-  console.log(err.stack);
+  console.log(err);
+  // TODO 移除該移除的監聽
   closePort();
   callback && callback();
 })
@@ -26,6 +28,8 @@ async function call(data) {
 // Promise
 // 將交易資料發送到端末機(EDC)
 async function sendTransactionData(port, data) {
+  await send(data);
+
   return new Promise((resolve, reject) => {
     let ack_timeout;
 
@@ -39,31 +43,13 @@ async function sendTransactionData(port, data) {
       }, 1000);
     }
 
-    // send request to EDC
-    // port.write(data, (err) => {
-    //   if (err) {
-    //     return reject(err);
-    //   }
-    //   console.log(`send request data: ${data.toString('ascii')}`);
-    //   console.log('Waiting ACK response...');
-
-    //   // 如果一秒內沒收到ACK/NAK先繼續往下做
-    //   timeout = setTimeout(() => {
-    //     console.log('ACK miss...')
-    //     // 移除 ackHandler
-    //     port.removeListener('data', ackHandler);
-    //     return resolve();
-    //   }, 1000);
-    // });
-
-    await send(data);
     ackTimeout();
 
     // check EDC 是否回傳ACK
     let receiveArray = [];
     let retry = 0;
 
-    let ackHandler = (data) => {
+    async function ackHandler(data) {
       receiveArray.push(data)
       if (Buffer.concat(receiveArray).length === 2) {
         // 收到ACK
@@ -84,10 +70,9 @@ async function sendTransactionData(port, data) {
             retry += 1;
             receiveArray = [];
             clearTimeout(ack_timeout);
-            setTimeout(() => {
-              await send(data);
-              ackTimeout();
-            }, 1000);
+            await wait(1000);
+            await send(data);
+            ackTimeout();
           }
         }
       }
@@ -104,13 +89,13 @@ function ReceiveData() {
     console.log('等待交易結果...');
     // timeout60秒
     let timeout = setTimeout(() => {
+      port.removeListener('data', responseHandler);
       return reject('操作逾時');
     }, 60000);
 
     let receiveArray = [];
     let retry = 0;
 
-    // TODO
     async function responseHandler(data) {
       try {
         receiveArray.push(data);
@@ -118,10 +103,19 @@ function ReceiveData() {
         // receive data until ETX
         if (data[data.length - 2] === 3) {
           receiveBuffer = Buffer.concat(receiveArray);
+          // 送NAK給EDC時會一次收到1206byte，不知道為何..
+          if (receiveBuffer.length > 603) {
+            retry += (receiveBuffer.length / 603) - 1
+            receiveBuffer = receiveBuffer.slice(0, 603);
+            console.log('=================================')
+            console.log(receiveBuffer)
+            console.log('=================================')
+          }
           console.log('EDC回傳response');
           console.log('Check LRC ....');
           // check LRC & check 資料長度
-          if (checkLrc(receiveBuffer) && checkDataLength(receiveBuffer)) {
+          // if (checkLrc(receiveBuffer) && checkDataLength(receiveBuffer)) {
+          if (false) {
             console.log('LRC correct');
             console.log('Data length correct');
             let responseStr = receiveBuffer.slice(1, -2).toString('ascii');
@@ -133,16 +127,18 @@ function ReceiveData() {
             transaction_response = new Transaction();
             transaction_response.parseResponse(responseStr);
             return resolve(transaction_response);
-          } else {;
-            await sendNak();
-            console.log('LRC或資料長度錯誤，重新接收資料...');
-            retry += 1;
-            receiveArray = [];
-            if (retry === 2) {
+          // LRC或資料長度錯誤
+          } else {
+            if (retry === 3) {
               await sendNak();
               port.removeListener('data', responseHandler);
               clearTimeout(timeout);
               return reject('LRC或資料長度錯誤');
+            } else {
+              retry += 1;
+              receiveArray = [];
+              await sendNak();
+              console.log('LRC或資料長度錯誤，重新接收資料...');
             }
           }
         };
@@ -194,6 +190,7 @@ function sendNak() {
       if (err) {
         return reject(err);
       }
+      console.log('send NAK to EDC')
       resolve();
     });
   });
