@@ -12,12 +12,12 @@ const NAK = Buffer.from([21]);
 
 class Transaction {
   constructor(object) {
-    this.initData()
+    this.initData();
   }
 
   // 打包交易資料
   PackTransactionData() {
-    console.log('Preparing transaction data...')
+    console.log('Preparing transaction data...');
     const data_str = this.dataToString();
     const data_buffer = Buffer.from(data_str, 'ascii');
     // const data_buffer = await this.readIn();
@@ -34,9 +34,9 @@ class Transaction {
   // 將data組成string
   dataToString() {
     let DataArray = Object.values(this.data);
-    let str = ''
+    let str = '';
     for(let value of DataArray) {
-      str += value
+      str += value;
     }
     return str;
   }
@@ -46,9 +46,9 @@ class Transaction {
     return new Promise((resolve, reject) => {
       let filePath = path.resolve(__dirname, '../in.dat');
       fs.readFile(filePath, (err, data) => {
-        console.log(data)
+        console.log(data);
         resolve(data);
-      })
+      });
     });
   }
 
@@ -171,7 +171,7 @@ class Transaction {
   static calcLrc(buffer) {
     let lrc = 0;
     for(let byte of buffer) {
-      lrc ^= byte
+      lrc ^= byte;
     }
     console.log(`LRC is ${lrc}`);
     return Buffer.from([lrc]);
@@ -186,8 +186,8 @@ class Transaction {
   }
 
   refund(amount, approvalCode, referenceNo, storeId) {
-    this.data.transType = '02'
-    this.data.hostID = '01'
+    this.data.transType = '02';
+    this.data.hostID = '01';
     this.data.transAmount = amount;
     this.data.approvalCode = approvalCode;
     this.data.referenceNo = referenceNo;
@@ -202,11 +202,11 @@ class Transaction {
 }
 
 function buildEmptyString(length) {
-  let str = ''
+  let str = '';
   for(i = 0; i <  length; i++) {
-    str += '\xa0'
+    str += '\xa0';
   }
-  return str
+  return str;
 }
 
 module.exports = { Transaction };

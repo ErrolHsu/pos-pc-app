@@ -21,15 +21,14 @@ app.use(function(err, req, res, next) {
 
 
 app.get('/', (req, res) => {
-  console.log('dsd')
   let transaction = req.transaction;
   let data = transaction.PackTransactionData();
 
   ecr.call(data).then((response) => {
-    res.send(response.toString())
+    res.send(response.toString());
   }).catch((err) => {
-    res.send(err.toString())
+    res.send(err.toString());
   });
 });
 
-app.listen(ECR_CONFIG.port, () => console.log(`listening on port ${ECR_CONFIG.port}`) )
+app.listen(ECR_CONFIG.port, () => console.log(`listening on port ${ECR_CONFIG.port}`) );

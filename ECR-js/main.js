@@ -12,7 +12,8 @@ port.on('error', function(err, callback) {
 
 async function call(data) {
   try {
-    await sendData(port, data);
+    await openPort();
+    await sendTransactionData(port, data);
     let responseObject = await ReceiveData();
     closePort();
     return Promise.resolve(responseObject);
@@ -22,60 +23,81 @@ async function call(data) {
   }
 }
 
+// Promise
 // 將交易資料發送到端末機(EDC)
-async function sendData(port, data) {
+async function sendTransactionData(port, data) {
   return new Promise((resolve, reject) => {
-    var timeout;
-    port.open(function(err) {
-      console.log('port opening ...')
-      if (err) {
-        return reject(err);
-      }
+    let ack_timeout;
 
-      // send request to EDC
-      port.write(data, (err) => {
-        if (err) {
-          return reject(err);
-        }
-        console.log(`send request data: ${data.toString('ascii')}`);
-        console.log('Waiting ACK response...');
+    function ackTimeout() {
+      // 如果一秒內沒收到ACK/NAK先繼續往下做
+      ack_timeout = setTimeout(() => {
+        console.log('ACK miss...');
+        // 移除 ackHandler
+        port.removeListener('data', ackHandler);
+        return resolve();
+      }, 1000);
+    }
 
-        // 如果一秒內沒收到ACK/NAK先繼續往下做
-        timeout = setTimeout(() => {
-          console.log('ACK miss...')
-          // 移除 ackHandler
-          port.removeListener('data', ackHandler);
-          return resolve();
-        }, 1000);
-      });
-    });
+    // send request to EDC
+    // port.write(data, (err) => {
+    //   if (err) {
+    //     return reject(err);
+    //   }
+    //   console.log(`send request data: ${data.toString('ascii')}`);
+    //   console.log('Waiting ACK response...');
+
+    //   // 如果一秒內沒收到ACK/NAK先繼續往下做
+    //   timeout = setTimeout(() => {
+    //     console.log('ACK miss...')
+    //     // 移除 ackHandler
+    //     port.removeListener('data', ackHandler);
+    //     return resolve();
+    //   }, 1000);
+    // });
+
+    await send(data);
+    ackTimeout();
 
     // check EDC 是否回傳ACK
-    let receiveArray = []
+    let receiveArray = [];
+    let retry = 0;
 
     let ackHandler = (data) => {
       receiveArray.push(data)
       if (Buffer.concat(receiveArray).length === 2) {
+        // 收到ACK
         if (checkAck(Buffer.concat(receiveArray))) {
           // 移除監聽與timeout
           port.removeListener('data', ackHandler);
-          clearTimeout(timeout);
+          clearTimeout(ack_timeout);
           console.log('EDC回傳ACK');
           return resolve('Receive ACK');
+        // 收到NAK
         } else {
-          // 移除監聽與timeout
-          port.removeListener('data', ackHandler);
-          clearTimeout(timeout);
-          console.log(receiveArray);
-          return reject('ACK WRONG');
+          if (retry === 3) {
+            // 移除監聽與timeout
+            port.removeListener('data', ackHandler);
+            clearTimeout(ack_timeout);
+            return reject('EDC拒絕交易。');
+          } else {
+            retry += 1;
+            receiveArray = [];
+            clearTimeout(ack_timeout);
+            setTimeout(() => {
+              await send(data);
+              ackTimeout();
+            }, 1000);
+          }
         }
       }
     }
 
-    port.on('data', ackHandler)
-  })
+    port.on('data', ackHandler);
+  });
 }
 
+// Promise
 // 接收端末機(EDC) response
 function ReceiveData() {
   return new Promise((resolve, reject) => {
@@ -97,7 +119,7 @@ function ReceiveData() {
         if (data[data.length - 2] === 3) {
           receiveBuffer = Buffer.concat(receiveArray);
           console.log('EDC回傳response');
-          console.log('Check LRC ....')
+          console.log('Check LRC ....');
           // check LRC & check 資料長度
           if (checkLrc(receiveBuffer) && checkDataLength(receiveBuffer)) {
             console.log('LRC correct');
@@ -129,9 +151,25 @@ function ReceiveData() {
       }
     };
     port.on('data', responseHandler);
-  })
+  });
 }
 
+// Promise
+// write data to EDC
+function send(data) {
+  return new Promise((resolve, reject) => {
+    port.write(data, (err) => {
+      if (err) {
+        return reject(err);
+      }
+      console.log(`send request data: ${data.toString('ascii')}`);
+      console.log('Waiting ACK response...');
+      resolve();
+    });
+  });
+}
+
+// Promise
 // 回傳ACK
 function sendAck() {
   return new Promise((resolve, reject) => {
@@ -142,10 +180,11 @@ function sendAck() {
         return reject(err);
       }
       resolve();
-    })
-  })
+    });
+  });
 }
 
+// Promise
 // 回傳NAK
 function sendNak() {
   return new Promise((resolve, reject) => {
@@ -156,8 +195,8 @@ function sendNak() {
         return reject(err);
       }
       resolve();
-    })
-  })
+    });
+  });
 }
 
 // 確認回傳的LRC正確
@@ -184,6 +223,20 @@ function checkDataLength(data) {
 // 確認收到ACK
 function checkAck(response) {
   return (response.readUIntBE(0,1) === 6 && response.readUIntBE(1,1) === 6);
+}
+
+// Promise
+function openPort() {
+  return new Promise((resolve, reject) => {
+    // open port
+    port.open(function(err) {
+      if (err) {
+        reject(err);
+      }
+      console.log('port opening ...');
+      resolve();
+    });
+  });
 }
 
 function closePort() {

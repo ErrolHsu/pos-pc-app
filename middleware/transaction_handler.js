@@ -3,7 +3,7 @@ const { Transaction } = require('../ECR-js/EcrData');
 function transactionHandler(req, res, next) {
   // params = req.params
   params = req.query;
-  console.log(params)
+  console.log(params);
   let transaction = generateTrasaction(params);
   req.transaction = transaction;
   next();
