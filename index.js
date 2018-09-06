@@ -4,6 +4,7 @@ const ecr = require('./ECR-js/main');
 const ECR_CONFIG = require('./ECR-js/EcrConfig');
 const { Transaction } = require('./ECR-js/EcrData');
 const transactionHandler = require('./middleware/transaction_handler');
+const logger = require('./modules/logger');
 
 // parse request body json
 // app.use(express.logger('dev'));
@@ -16,6 +17,7 @@ app.use(transactionHandler);
 // 
 app.use(function(err, req, res, next) {
   console.error(err);
+  logger.error('sendNak' , err.message);
   res.status(500).send(err);
 });
 
@@ -27,7 +29,8 @@ app.get('/', (req, res) => {
     // TODO 根據卡機response code 來回傳response
     res.send(JSON.stringify(response.data));
   }).catch((err) => {
-    res.send(err.toString());
+    logger.error('Transaction Request' , err.message);
+    res.send(err.message);
   });
 });
 
