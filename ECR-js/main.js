@@ -114,8 +114,8 @@ function ReceiveData() {
           console.log('EDC回傳response');
           console.log('Check LRC ....');
           // check LRC & check 資料長度
-          // if (checkLrc(receiveBuffer) && checkDataLength(receiveBuffer)) {
-          if (false) {
+          if (checkLrc(receiveBuffer) && checkDataLength(receiveBuffer)) {
+          // if (false) {
             console.log('LRC correct');
             console.log('Data length correct');
             let responseStr = receiveBuffer.slice(1, -2).toString('ascii');

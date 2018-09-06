@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const ECR_CONFIG = require('./EcrConst')
+const ECR_CONST = require('./EcrConst')
 
 const STX = Buffer.from([2]);
 
@@ -177,21 +177,23 @@ class Transaction {
     return Buffer.from([lrc]);
   }
 
-  /****    Transaction Type     ***/
-  sale(amount, storeId) {
-    this.data.transType = '01';
-    // this.data.transAmount = '000000000100';
-    this.data.transAmount = amount;
+  /****   Set Transaction Type     ***/
+
+  // 一般交易
+  sale(transAmount, storeId) {
+    this.data.transType = ECR_CONST.TRANS_TYPE_SALE;
+    this.data.transAmount = transAmount;
     // 選填
     if(storeId) {
       this.data.storeId = storeId;
     }
   }
 
-  refund(amount, approvalCode, referenceNo, storeId) {
-    this.data.transType = '02';
-    this.data.hostID = '01';
-    this.data.transAmount = amount;
+  // 退貨
+  refund(transAmount, approvalCode, referenceNo, storeId) {
+    this.data.transType = ECR_CONST.TRANS_TYPE_REFUND;
+    this.data.hostID = ECR_CONST.HOST_ID_ESUN;
+    this.data.transAmount = transAmount;
     this.data.approvalCode = approvalCode;
     this.data.referenceNo = referenceNo;
     // 選填
@@ -200,11 +202,160 @@ class Transaction {
     }
   }
 
-  setTransType() {
+  // 取消
+  void(receiptNo) {
+    this.data.transType = ECR_CONST.TRANS_TYPE_VOID;
+    this.data.hostID = ECR_CONST.HOST_ID_ESUN;
+    this.data.receiptNo = receiptNo;
+  }
 
-  }  
+  // 自動結帳
+  settlement() {
+    this.data.transType = ECR_CONST.TRANS_TYPE_SETTLEMENT;
+  }
 
-}
+  // 終止交易
+  terminate() {
+    this.data.transType = ECR_CONST.TRANS_TYPE_TERMINATE;
+  }
+
+  /****    銀聯卡     ***/
+
+  // CUP一般交易
+  CUPSale(transAmount, storeId) {
+    this.data.transType = ECR_CONST.TRANS_TYPE_SALE;
+    this.data.hostID = ECR_CONST.HOST_ID_ESUN_CUP;
+    this.data.transAmount = transAmount;
+    // 選填
+    if(storeId) {
+      this.data.storeId = storeId;
+    }
+  }
+
+  // CUP退貨
+  CUPRefund(transAmount, approvalCode, referenceNo, storeId) {
+    this.data.transType = ECR_CONST.TRANS_TYPE_REFUND;
+    this.data.hostID = ECR_CONST.HOST_ID_ESUN_CUP;
+    this.data.transAmount = transAmount;
+    this.data.approvalCode = approvalCode;
+    this.data.referenceNo = referenceNo;
+    // 選填
+    if(storeId) {
+      this.data.storeId = storeId;
+    }
+  }
+
+  // CUP取消
+  CUPVoid(receiptNo) {
+    this.data.transType = ECR_CONST.TRANS_TYPE_VOID;
+    this.data.hostID = ECR_CONST.HOST_ID_ESUN_CUP;
+    this.data.receiptNo = receiptNo;
+  }
+
+  /****    BarCode     ***/
+
+  // 掃碼交易
+  barCodeSale(transAmount, orderInformation) {
+    this.data.transType = ECR_CONST.TRANS_TYPE_BARCODE_SALE;
+    this.data.hostID = ECR_CONST.HOST_ID_ESUN_BARCODE;
+    this.data.transAmount = transAmount;
+
+    if(orderInformation) {
+      this.data.orderInformation = orderInformation;
+    }
+  }
+
+  // 掃碼退貨
+  barCodeRefund(transAmount, orderNumber, orderInformation) {
+    this.data.transType = ECR_CONST.TRANS_TYPE_BARCODE_REFUND;
+    this.data.hostID = ECR_CONST.HOST_ID_ESUN_BARCODE;
+    this.data.transAmount = transAmount;
+
+    if(orderInformation) {
+      this.data.orderInformation = orderInformation;
+    }
+
+    if(orderNumber) {
+      this.data.orderNumber = orderNumber;
+    }
+  }
+
+  // 掃碼取消
+  barCodeVoid(orderNumber, orderInformation) {
+    this.data.transType = ECR_CONST.TRANS_TYPE_BARCODE_VOID;
+    this.data.hostID = ECR_CONST.HOST_ID_ESUN_BARCODE;
+
+    if(orderInformation) {
+      this.data.orderInformation = orderInformation;
+    }
+
+    if(orderNumber) {
+      this.data.orderNumber = orderNumber;
+    }
+  }
+
+  /****    悠遊卡，一卡通等票卡     ***/
+
+  // 票卡一般交易
+  ticketSale(transType, hostID, transAmount) {
+    this.data.transType = transType;
+    this.data.hostID = hostID;
+    this.data.transAmount = transAmount;
+  }
+
+  // 票卡退貨
+  ticketRefund(transType, hostID, transAmount, referenceNo, ticketReferenceNumber) {
+    this.data.transType = transType;
+    this.data.hostID = hostID;
+    this.data.transAmount = transAmount;
+    this.data.referenceNo = referenceNo;
+    if(ticketReferenceNumber) {
+      this.data.ticketReferenceNumber = ticketReferenceNumber;
+    }
+  }
+
+  // 悠遊卡一般交易
+  easyCardSale(transAmount) {
+    this.ticketSale(ECR_CONST.TRANS_TYPE_EASY_CARD_SALE, ECR_CONST.HOST_ID_EASY_CARD, transAmount);
+  }
+
+  // 悠遊卡退貨
+  easyCardRefund(transAmount, referenceNo) {
+    this.ticketRefund(ECR_CONST.TRANS_TYPE_EASY_CARD_REFUND, ECR_CONST.HOST_ID_EASY_CARD, transAmount, referenceNo)
+  }
+
+  // 一卡通一般交易
+  iPassSale(transAmount) {
+    this.ticketSale(ECR_CONST.TRANS_TYPE_IPASS_SALE, ECR_CONST.HOST_ID_IPASS, transAmount);
+  }
+
+  // 一卡通退貨
+  iPassRefund(transAmount, referenceNo, ticketReferenceNumber) {
+    this.ticketRefund(ECR_CONST.TRANS_TYPE_IPASS_REFUND, ECR_CONST.HOST_ID_IPASS, transAmount, referenceNo, ticketReferenceNumber)
+  }
+
+  // icash一般交易
+  iCashSale(transAmount) {
+    this.ticketSale(ECR_CONST.TRANS_TYPE_ICASH_SALE, ECR_CONST.HOST_ID_ICASH, transAmount);
+  }
+
+  // icash退貨
+  iCashRefund(transAmount, referenceNo) {
+    this.ticketRefund(ECR_CONST.TRANS_TYPE_ICASH_REFUND, ECR_CONST.HOST_ID_ICASH, transAmount, referenceNo)
+  }
+
+  // HappyCash一般交易
+  happyCashSale(transAmount) {
+    this.ticketSale(ECR_CONST.TRANS_TYPE_HAPPY_CASH_SALE, ECR_CONST.HOST_ID_HAPPY_CASH, transAmount);
+  }
+
+  // HappyCash退貨
+  happyCashRefund(transAmount, referenceNo) {
+    this.ticketRefund(ECR_CONST.TRANS_TYPE_HAPPY_CASH_REFUND, ECR_CONST.HOST_ID_HAPPY_CASH, transAmount, referenceNo)
+  }
+
+} // Transaction class end
+
 
 function buildEmptyString(length) {
   let str = '';
