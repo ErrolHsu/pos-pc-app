@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const app = express();
 const ecr = require('./ECR-js/main');
@@ -7,7 +8,6 @@ const transactionHandler = require('./middleware/transaction_handler');
 const logger = require('./modules/logger');
 
 // parse request body json
-// app.use(express.logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -16,12 +16,14 @@ app.use(transactionHandler);
 
 // 
 app.use(function(err, req, res, next) {
-  console.error(err);
-  logger.error('sendNak' , err.message);
+  logger.error('request', err.message);
   res.status(500).send(err);
 });
 
 app.get('/', (req, res) => {
+  // TODO 之後刪掉
+  console.log(process.env.NODE_ENV);
+  // ...........
   let transaction = req.transaction;
   let data = transaction.PackTransactionData();
 
@@ -29,7 +31,7 @@ app.get('/', (req, res) => {
     // TODO 根據卡機response code 來回傳response
     res.send(JSON.stringify(response.data));
   }).catch((err) => {
-    logger.error('Transaction Request' , err.message);
+    logger.warn('Transaction Request' , `交易失敗 ${err.message}`);
     res.send(err.message);
   });
 });

@@ -1,0 +1,18 @@
+ERROR [2018-09-10 17:04:39 +0800][openPort] Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 
+WARN  [2018-09-10 17:04:39 +0800][Transaction Request] 交易失敗 Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 
+ERROR [2018-09-10 17:11:37 +0800][openPort] Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 
+WARN  [2018-09-10 17:11:37 +0800][Transaction Request] 交易失敗 Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 
+ERROR [2018-09-10 17:12:05 +0800][openPort] Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 
+WARN  [2018-09-10 17:12:05 +0800][Transaction Request] 交易失敗 Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 
+ERROR [2018-09-10 17:14:25 +0800][openPort] Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 
+WARN  [2018-09-10 17:14:25 +0800][Transaction Request] 交易失敗 Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 
+ERROR [2018-09-10 17:14:52 +0800][openPort] Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 
+WARN  [2018-09-10 17:14:52 +0800][Transaction Request] 交易失敗 Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 
+ERROR [2018-09-10 17:22:13 +0800][openPort] Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 
+WARN  [2018-09-10 17:22:13 +0800][Transaction Request] 交易失敗 Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 
+ERROR [2018-09-10 17:24:41 +0800][openPort] Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 
+WARN  [2018-09-10 17:24:41 +0800][Transaction Request] 交易失敗 Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 
+ERROR [2018-09-10 17:27:27 +0800][openPort] Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 
+WARN  [2018-09-10 17:27:27 +0800][Transaction Request] 交易失敗 Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 
+ERROR [2018-09-10 17:27:38 +0800][openPort] Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 
+WARN  [2018-09-10 17:27:38 +0800][Transaction Request] 交易失敗 Error: No such file or directory, cannot open /dev/tty.usbserial-FT0KF2AH 

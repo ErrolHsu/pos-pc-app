@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const ECR_CONST = require('./EcrConst')
+const logger = require('../modules/logger');
 
 const STX = Buffer.from([2]);
 
@@ -17,7 +18,7 @@ class Transaction {
 
   // 打包交易資料
   PackTransactionData() {
-    console.log('Preparing transaction data...');
+    logger.log('Preparing transaction data...');
     const data_str = this.dataToString();
     const data_buffer = Buffer.from(data_str, 'ascii');
     // const data_buffer = await this.readIn();
@@ -46,7 +47,7 @@ class Transaction {
     return new Promise((resolve, reject) => {
       let filePath = path.resolve(__dirname, '../in.dat');
       fs.readFile(filePath, (err, data) => {
-        console.log(data);
+        logger.log(data);
         resolve(data);
       });
     });
@@ -173,7 +174,7 @@ class Transaction {
     for(let byte of buffer) {
       lrc ^= byte;
     }
-    console.log(`LRC is ${lrc}`);
+    logger.log(`LRC is ${lrc}`);
     return Buffer.from([lrc]);
   }
 

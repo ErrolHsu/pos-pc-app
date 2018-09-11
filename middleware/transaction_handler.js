@@ -1,9 +1,10 @@
 const { Transaction } = require('../ECR-js/EcrData');
+const logger = require('../modules/logger');
 
 function transactionHandler(req, res, next) {
   // params = req.params
   params = req.query;
-  console.log(params);
+  logger.log(JSON.stringify(params));
   let transaction = generateTrasaction(params);
   req.transaction = transaction;
   next();
@@ -14,16 +15,16 @@ function generateTrasaction(params) {
   switch(params.type) {
     case 'sale':
       checkParams();
-      console.log(`${params.type} 交易`)
+      logger.log(`${params.type} 交易`)
       transaction.sale(params.amount);
       break;
     case 'refund':
       checkParams();
-      console.log(`${params.type} 交易`)
+      logger.log(`${params.type} 交易`)
       transaction.refund('000000002100', '123451', 'reference012');
       break;
     default:
-      console.log(`未知交易`)
+      logger.log(`未知交易`)
       transaction.sale();
   }
   return transaction;

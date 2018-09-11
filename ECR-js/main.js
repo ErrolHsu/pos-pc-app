@@ -7,8 +7,6 @@ let port = new SerialPort('/dev/tty.usbserial-FT0KF2AH', ECR_CONFIG.PORT_SETTING
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 port.on('error', function(err, callback) {
-  console.log(err.message);
-  // TODO 移除該移除的監聽
   closePort();
   callback && callback();
 })
@@ -37,10 +35,9 @@ async function sendTransactionData(port, data) {
     function ackTimeout() {
       // 如果一秒內沒收到ACK/NAK先繼續往下做
       ack_timeout = setTimeout(() => {
-        console.log('ACK miss...');
         // 移除 ackHandler
         port.removeListener('data', ackHandler);
-        logger.warning('ackTimeout' , '未收到端末機ACK');
+        logger.warn('ackTimeout' , '未收到端末機ACK');
         return resolve();
       }, 1000);
     }
@@ -67,10 +64,10 @@ async function sendTransactionData(port, data) {
             // 移除監聽與timeout
             port.removeListener('data', ackHandler);
             clearTimeout(ack_timeout);
-            logger.warning('ackHandler' , '端末機拒絕交易');
+            logger.warn('ackHandler' , '端末機拒絕交易');
             return reject('EDC拒絕交易。');
           } else {
-            logger.warning('ackHandler' , '端末機回傳NAK');
+            logger.warn('ackHandler' , '端末機回傳NAK');
             retry += 1;
             receiveArray = [];
             clearTimeout(ack_timeout);
@@ -94,7 +91,7 @@ function ReceiveData() {
     // timeout60秒
     let timeout = setTimeout(() => {
       port.removeListener('data', responseHandler);
-      logger.warning('ReceiveData' , '交易逾時');
+      logger.warn('ReceiveData' , '交易逾時');
       return reject('交易逾時');
     }, 60000);
 
@@ -116,12 +113,12 @@ function ReceiveData() {
             console.log(receiveBuffer)
             console.log('=================================')
           }
-          console.log('EDC回傳response');
-          console.log('Check LRC ....');
+          logger.log('EDC回傳response');
+          logger.log('Check LRC ....');
           // check LRC & check 資料長度
           if (checkLrc(receiveBuffer) && checkDataLength(receiveBuffer)) {
-            console.log('LRC correct');
-            console.log('Data length correct');
+            logger.log('LRC correct');
+            logger.log('Data length correct');
             let responseStr = receiveBuffer.slice(1, -2).toString('ascii');
             // 移除監聽與timeout
             port.removeListener('data', responseHandler);
@@ -137,11 +134,10 @@ function ReceiveData() {
               await sendNak();
               port.removeListener('data', responseHandler);
               clearTimeout(timeout);
-              logger.warning('responseHandler' , 'LRC或資料長度錯誤，交易取消');
+              logger.warn('responseHandler' , 'LRC或資料長度錯誤，交易取消');
               return reject('LRC或資料長度錯誤，交易取消');
             } else {
-              logger.warning('responseHandler' , 'LRC或資料長度錯誤');
-              console.log('LRC或資料長度錯誤，重新接收資料...');
+              logger.warn('responseHandler' , 'LRC或資料長度錯誤，重新接收資料...');
               retry += 1;
               receiveArray = [];
               await sendNak();
@@ -149,7 +145,7 @@ function ReceiveData() {
           }
         };
       } catch(err) {
-        reject(err);
+        return reject(err);
       }
     };
     port.on('data', responseHandler);
@@ -165,9 +161,9 @@ function send(data) {
         logger.error('send' , err.message);
         return reject(err);
       }
-      console.log(`send request data: ${data.toString('ascii')}`);
-      console.log('Waiting ACK response...');
-      resolve();
+      logger.log(`send request data: ${data.toString('ascii')}`);
+      logger.log('Waiting ACK response...');
+      return resolve();
     });
   });
 }
@@ -183,7 +179,7 @@ function sendAck() {
         logger.error('sendAck' , err.message);
         return reject(err);
       }
-      resolve();
+      return resolve();
     });
   });
 }
@@ -199,8 +195,8 @@ function sendNak() {
         logger.error('sendNak' , err.message);
         return reject(err);
       }
-      console.log('send NAK to EDC')
-      resolve();
+      logger.log('send NAK to EDC')
+      return resolve();
     });
   });
 }
@@ -211,18 +207,18 @@ function checkLrc(receiveBuffer) {
   let data = receiveBuffer.slice(1, -1);
   let lrc = 0;
 
-  console.log(`EDC回傳Lrc ${receiveLrc}`);
+  logger.log(`EDC回傳Lrc ${receiveLrc}`);
 
   for(byte of data) {
     lrc ^= byte;
   }
-  console.log(`Lrc should be ${lrc}`)
+  logger.log(`Lrc should be ${lrc}`)
   return (lrc === receiveLrc);
 }
 
 // 確認資料長度正確
 function checkDataLength(data) {
-  console.log(`Data length is ${data.length}`);
+  logger.log(`Data length is ${data.length}`);
   return data.length === 603;
 }
 
@@ -238,10 +234,10 @@ function openPort() {
     port.open(function(err) {
       if (err) {
         logger.error('openPort' , err.message);
-        reject(err);
+        return reject(err);
       }
-      console.log('port opening ...');
-      resolve();
+      logger.log('port opening ...');
+      return resolve();
     });
   });
 }
@@ -249,7 +245,7 @@ function openPort() {
 function closePort() {
   if (port.isOpen) {
     port.close();
-    console.log('port closed');
+    logger.log('port closed');
   }
 }
 
