@@ -15,6 +15,7 @@
   "license": "ISC",
   "dependencies": {
     "convict": "^4.3.2",
+    "cryptiles": "^4.1.2",
     "dotenv": "^6.0.0",
     "express": "^4.16.3",
     "moment": "^2.22.2",
