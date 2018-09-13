@@ -3,7 +3,7 @@ const { Transaction } = require('./EcrData');
 const ECR_CONFIG = require('./EcrConfig');
 const logger = require('../modules/logger');
 
-let port = new SerialPort('/dev/tty.usbserial-FT0KF2AH', ECR_CONFIG.PORT_SETTING);
+let port = new SerialPort(ECR_CONFIG.portName, ECR_CONFIG.PORT_SETTING);
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 port.on('error', function(err, callback) {

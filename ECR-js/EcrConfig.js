@@ -1,7 +1,7 @@
 const config = require('../configs/config');
 
 const ECR_CONFIG = {
-  port: config.get('port'),
+  portName: config.get('ecr.portName'),
   PORT_SETTING: {
     autoOpen: config.get('ecr.autoOpen'),
     baudRate: config.get('ecr.baudRate'),

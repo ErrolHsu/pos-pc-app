@@ -37,4 +37,4 @@ app.get('/', (req, res) => {
   });
 });
 
-app.listen(ECR_CONFIG.port, () => console.log(`listening on port ${ECR_CONFIG.port}`) );
+app.listen(config.get('port'), () => console.log(`listening on port ${config.get('port')}`) );

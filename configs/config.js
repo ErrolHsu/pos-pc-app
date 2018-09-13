@@ -24,6 +24,10 @@ let config = convict({
     arg: "port"
   },
   ecr: {
+    portName: {
+      default: '',
+      arg: 'portName'
+    },
     autoOpen: {
       default: false,
       arg: "autoOpen"
