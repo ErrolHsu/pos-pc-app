@@ -1,25 +1,29 @@
 const fs = require('fs');
 const path = require('path');
 const moment = require('moment-timezone');
+const config = require('../configs/config');
+const path_helper = require('../modules/path_helper');
 
+const log_path = path_helper.join(`logs/process-logs/${config.get('env')}-${currentDate()}.txt`);
+const error_log_path = path_helper.join(`logs/error-logs/${config.get('env')}-${currentDate()}.txt`);
 
 // error logs
 
 function error(action, message) {
   console.log(message);
-  fs.appendFileSync(error_log_path(), error_message('ERROR', action, message));
+  fs.appendFileSync(error_log_path, error_message('ERROR', action, message));
 }
 
 function warn(action, message) {
   console.log(message);
-  fs.appendFileSync(error_log_path(), error_message('WARN ', action, message));
+  fs.appendFileSync(error_log_path, error_message('WARN ', action, message));
 }
 
 // process logs
 
 function log(message) {
   console.log(message);
-  fs.appendFileSync(log_path(), process_message(message));
+  fs.appendFileSync(log_path, process_message(message));
 }
 
 // help methods
@@ -43,24 +47,6 @@ function currentDateTime() {
 
 function currentDate() {
   return moment().tz("Asia/Taipei").format('YYYY-MM-DD');
-}
-
-// log path
-
-function log_path() {
-  if(process.env.NODE_ENV === 'development') {
-    return path.join(__dirname, `../logs/process-logs/dev-${currentDate()}.txt`)
-  } else {
-    return path.join(process.execPath, `../logs/process-logs/${currentDate()}.txt`)
-  }
-}
-
-function error_log_path() {
-  if(process.env.NODE_ENV === 'development') {
-    return path.join(__dirname, `../logs/error-logs/dev-${currentDate()}.txt`)
-  } else {
-    return path.join(process.execPath, `../logs/error-logs/${currentDate()}.txt`)
-  }
 }
 
 module.exports = { log, error, warn };

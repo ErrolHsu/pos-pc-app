@@ -1,11 +1,13 @@
+const config = require('../configs/config');
+
 const ECR_CONFIG = {
-  port: 3000,
+  port: config.get('port'),
   PORT_SETTING: {
-    autoOpen: false,
-    baudRate: 9600,
-    dataBits: 7,
-    stopBits: 1,
-    parity: 'even',
+    autoOpen: config.get('ecr.autoOpen'),
+    baudRate: config.get('ecr.baudRate'),
+    dataBits: config.get('ecr.dataBits'),
+    stopBits: config.get('ecr.stopBits'),
+    parity: config.get('ecr.parity'),
   },
 }
 
