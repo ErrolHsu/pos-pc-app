@@ -2,7 +2,6 @@ node_modules
 in.dat
 test.js
 .node_env
-config.js
 logs/error-logs/*
 logs/process-logs/*
 configs/*.json
