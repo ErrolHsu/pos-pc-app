@@ -5,7 +5,9 @@ function printPortList() {
     if(err) {
       throw err;
     }
+    console.log('========================PORT LIST========================')
     console.log(result);
+    console.log('=========================================================')
   })
 }
 

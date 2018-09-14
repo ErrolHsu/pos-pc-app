@@ -8,7 +8,7 @@ function find_env_file() {
   return fs.existsSync(path.resolve(path.dirname(process.execPath), '.node_env')) ? path.resolve(path.dirname(process.execPath), '.node_env') : path.resolve(__dirname, '../.node_env')
 }
 
-// schema
+// configs/env.json schema
 let config = convict({
   env: {
     format: ["production", "development", "test"],
@@ -22,27 +22,38 @@ let config = convict({
     arg: "port"
   },
   ecr: {
+    timeout: {
+      format: 'int',
+      default: 60000,
+      arg: 'timeout'
+    },
     portName: {
+      format: String,
       default: '',
       arg: 'portName'
     },
     autoOpen: {
+      format: Boolean,
       default: false,
       arg: "autoOpen"
     },
     baudRate: {
+      format: 'int',
       default: 9600,
       arg: 'baudRate'
     },
     dataBits: {
+      format: 'int',
       default: 7,
       arg: 'dataBits'
     },
     stopBits: {
+      format: 'int',
       default: 1,
       arg: 'stopBits'
     },
     parity: {
+      format: String,
       default: 'even',
       arg: 'parity'
     }
@@ -61,15 +72,14 @@ let config = convict({
   // }
 });
 
-// Load environment dependent configuration
+// Load environment dependent env
 const env = config.get('env');
 const config_path = path_helper.join(`configs/${env}.json`);
 
-console.log(env)
+console.log(`environment is ${env}`)
 
-// load config
+// load & valid config
 config.loadFile(config_path);
 config.validate({ allowed: 'strict' });
-
 
 module.exports = config;

@@ -2,6 +2,8 @@ const SerialPort = require("serialport");
 const { Transaction } = require('./EcrData');
 const ECR_CONFIG = require('./EcrConfig');
 const logger = require('../modules/logger');
+const config = require('../configs/config');
+const ECR_TIMEOUT = config.get('ecr.timeout')
 
 let port = new SerialPort(ECR_CONFIG.portName, ECR_CONFIG.PORT_SETTING);
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -13,7 +15,7 @@ let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function call(data) {
   if (port.isOpen) {
-    return Promise.reject(new Error('Port is already open'));
+    return Promise.reject(new Error('上筆交易尚未完成...'));
   };
 
   try {
@@ -99,7 +101,7 @@ function ReceiveData() {
       port.removeListener('data', responseHandler);
       logger.warn('ReceiveData' , '交易逾時');
       return reject(new Error('交易逾時'));
-    }, 60000);
+    }, ECR_TIMEOUT);
 
     let receiveArray = [];
     let retry = 0;
