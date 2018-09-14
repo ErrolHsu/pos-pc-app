@@ -11,11 +11,13 @@ const error_log_path = path_helper.join(`logs/error-logs/${config.get('env')}-${
 
 function error(action, message) {
   console.log(message);
+  fs.appendFileSync(log_path, process_message(message));
   fs.appendFileSync(error_log_path, error_message('ERROR', action, message));
 }
 
 function warn(action, message) {
   console.log(message);
+  fs.appendFileSync(log_path, process_message(message));
   fs.appendFileSync(error_log_path, error_message('WARN ', action, message));
 }
 

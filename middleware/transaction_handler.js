@@ -23,9 +23,14 @@ function generateTrasaction(params) {
       logger.log(`${params.type} 交易`)
       transaction.refund('000000002100', '123451', 'reference012');
       break;
+    case 'easyCardSale':
+      checkParams();
+      logger.log(`${params.type} 交易`)
+      transaction.easyCardSale(params.amount)
+      break;
     default:
-      logger.log(`未知交易`)
-      transaction.sale();
+      logger.log(`終止交易`)
+      transaction.terminate();
   }
   return transaction;
 }

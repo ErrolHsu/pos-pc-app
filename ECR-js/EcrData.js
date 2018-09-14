@@ -215,7 +215,7 @@ class Transaction {
     this.data.transType = ECR_CONST.TRANS_TYPE_SETTLEMENT;
   }
 
-  // 終止交易
+  // 終止交易 兩段交易聯名卡用
   terminate() {
     this.data.transType = ECR_CONST.TRANS_TYPE_TERMINATE;
   }
