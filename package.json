@@ -8,7 +8,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon index.js",
     "app": "./cyberbiz-pos-app",
-    "pkg": "pkg package.json -t node10-macos-x64 -o cyberbiz-pos-app"
+    "pkg": "pkg package.json -t node10-macos-x64 -o cyberbiz-pos-app",
+    "pkg-win": "pkg package.json -t node10-win-x86"
   },
   "keywords": [],
   "author": "",

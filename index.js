@@ -7,9 +7,9 @@ const ECR_CONFIG = require('./ECR-js/EcrConfig');
 const { Transaction } = require('./ECR-js/EcrData');
 const transactionHandler = require('./middleware/transaction_handler');
 const logger = require('./modules/logger');
-const SerialPortHelper = require('./modules/serial_port_helper');
+// const SerialPortHelper = require('./modules/serial_port_helper');
 
-SerialPortHelper.printPortList();
+// SerialPortHelper.printPortList();
 
 // parse request body json
 app.use(express.json());
