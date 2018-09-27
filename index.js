@@ -7,9 +7,9 @@ const ECR_CONFIG = require('./ECR-js/EcrConfig');
 const { Transaction } = require('./ECR-js/EcrData');
 const transactionHandler = require('./middleware/transaction_handler');
 const logger = require('./modules/logger');
-// const SerialPortHelper = require('./modules/serial_port_helper');
+const SerialPortHelper = require('./modules/serial_port_helper');
 
-// SerialPortHelper.printPortList();
+SerialPortHelper.printPortList();
 
 // parse request body json
 app.use(express.json());
@@ -17,6 +17,13 @@ app.use(express.urlencoded({ extended: true }));
 
 // 決定交易種類
 app.use(transactionHandler);
+
+
+// 允許跨域 AJAX
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", '*');
+  next();
+})
 
 // 
 app.use(function(err, req, res, next) {
@@ -32,11 +39,22 @@ app.get('/', (req, res) => {
   let data = transaction.PackTransactionData();
 
   ecr.call(data).then((response) => {
-    // TODO 根據卡機response code 來回傳response
-    res.send(JSON.stringify(response.data));
+
+    let res_object = {
+      response_code: response.data.ecrResponseCode,
+      transaction_data: response.data
+    }
+
+    res.send(JSON.stringify(res_object));
   }).catch((err) => {
     logger.warn('Transaction Request' , `交易失敗 ${err.message}`);
-    res.send(err.message);
+
+    let res_object = {
+      message: err.message
+    }
+
+    res.status(400);
+    res.send(JSON.stringify(res_object));
   });
 });
 

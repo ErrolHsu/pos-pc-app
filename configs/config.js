@@ -29,7 +29,7 @@ let config = convict({
     },
     portName: {
       format: String,
-      default: '',
+      default: 'COM2',
       arg: 'portName'
     },
     autoOpen: {
