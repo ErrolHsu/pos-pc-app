@@ -193,6 +193,21 @@ class Transaction {
     }
   }
 
+  // 分期
+  installment(transAmount, productCode, storeId) {
+    this.data.transType = ECR_CONST.TRANS_TYPE_INSTALLMENT;
+    this.data.hostID = ECR_CONST.HOST_ID_INSTALL;
+    this.data.transAmount = transAmount;
+    // 選填
+    if(storeId) {
+      this.data.storeId = storeId;
+    }
+    if(productCode) {
+      this.data.productCode = productCode;
+    }
+
+  }
+
   // 退貨
   refund(transAmount, approvalCode, referenceNo, storeId) {
     this.data.transType = ECR_CONST.TRANS_TYPE_REFUND;

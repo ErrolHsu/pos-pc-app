@@ -19,6 +19,11 @@ function generateTrasaction(params) {
       checkParams(['amount'], params);
       transaction.sale(params.amount, params.storeId);
       break;
+    // 分期付款 //
+    case 'installment':
+      checkParams(['amount'], params);
+      transaction.installment(params.amount, params.productCode, params.storeId);
+      break;
     case 'refund':
       checkParams(['amount', 'approvalCode', 'referenceNo'], params);
       transaction.refund(params.amount, params.approvalCode, params.referenceNo, params.storeId);
