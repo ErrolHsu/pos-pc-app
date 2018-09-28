@@ -90,6 +90,7 @@ function checkParams (keys, params) {
     referenceNo: 12,
   }
 
+  // valid 必填參數
   for (let key of keys) {
     // check參數存在
     if ( !(key in params) ) {
@@ -104,6 +105,19 @@ function checkParams (keys, params) {
       }
     }
 
+  }
+
+  // valid 選填參數
+  if ( 'productCode' in params ) {
+    if ( params['productCode'].length !== 7 ) {
+      throw new Error("productCode length 不正確，length 需為 7")
+    }
+  }
+
+  if ( 'storeID' in params ) {
+    if ( params['storeID'].length !== 7 ) {
+      throw new Error("storeID length 不正確，length 需為 20")
+    }
   }
 
 }
