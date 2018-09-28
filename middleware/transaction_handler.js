@@ -12,87 +12,95 @@ function transactionHandler(req, res, next) {
 
 function generateTrasaction(params) {
   let transaction = new Transaction();
+  logger.log(`${params.type} 交易`)
   switch(params.type) {
     // 一般交易 //
     case 'sale':
-      checkParams();
-      logger.log(`${params.type} 交易`)
+      checkParams(['amount'], params);
       transaction.sale(params.amount, params.storeId);
       break;
     case 'refund':
-      checkParams();
-      logger.log(`${params.type} 交易`)
+      checkParams(['amount', 'approvalCode', 'referenceNo'], params);
       transaction.refund(params.amount, params.approvalCode, params.referenceNo, params.storeId);
       break;
     // 銀聯卡交易 //
     case 'CUPSale':
-      checkParams();
-      logger.log(`${params.type} 交易`)
+      checkParams(['amount'], params);
       transaction.CUPSale(params.amount, params.storeId);
       break;
     case 'CUPRefund':
-      checkParams();
-      logger.log(`${params.type} 交易`)
+      checkParams(['amount', 'approvalCode', 'referenceNo'], params);
       transaction.CUPRefund(params.amount, params.approvalCode, params.referenceNo, params.storeId);
       break;
     // 票卡交易 //
     // 悠遊卡 //
     case 'easyCardSale':
-      checkParams();
-      logger.log(`${params.type} 交易`)
+      checkParams(['amount'], params);
       transaction.easyCardSale(params.amount)
       break;
     case 'easyCardRefund':
-      checkParams();
-      logger.log(`${params.type} 交易`)
+      checkParams(['amount', 'approvalCode', 'referenceNo'], params);
       transaction.easyCardRefund(params.amount, params.referenceNo);
       break;
     // 一卡通 //
     case 'iPassSale':
-      checkParams();
-      logger.log(`${params.type} 交易`)
+      checkParams(['amount'], params);
       transaction.iPassSale(params.amount)
       break;
     case 'iPassRefund':
-      checkParams();
-      logger.log(`${params.type} 交易`)
+      checkParams(['amount', 'approvalCode', 'referenceNo'], params);
       transaction.iPassRefund(params.amount, params.referenceNo, params.ticketReferenceNumber);
       break;
     // icash //
     case 'iCashSale':
-      checkParams();
-      logger.log(`${params.type} 交易`)
+      checkParams(['amount'], params);
       transaction.iCashSale(params.amount)
       break;
     case 'iCashRefund':
-      checkParams();
-      logger.log(`${params.type} 交易`)
+      checkParams(['amount', 'approvalCode', 'referenceNo'], params);
       transaction.iCashRefund(params.amount, params.referenceNo);
       break;
     // HappyCash //
     case 'happyCashSale':
-      checkParams();
-      logger.log(`${params.type} 交易`)
+      checkParams(['amount'], params);
       transaction.happyCashSale(params.amount)
       break;
     case 'happyCashRefund':
-      checkParams();
-      logger.log(`${params.type} 交易`)
+      checkParams(['amount', 'approvalCode', 'referenceNo'], params);
       transaction.happyCashRefund(params.amount, params.referenceNo);
       break;
-
     default:
-      logger.log(`終止交易`)
-      transaction.terminate();
+      throw new Error('不支援的交易種類。')
+      return;
   }
   return transaction;
 }
 
-// TODO 檢查需要的參數是否都有
+// 驗證參數
 
-function checkParams() {
-  // throw "Error";
-  return
+function checkParams (keys, params) {
+  let valid = {
+    amount: 12,
+    approvalCode: 6,
+    referenceNo: 12,
+  }
+
+  for (let key of keys) {
+    // check參數存在
+    if ( !(key in params) ) {
+      throw new Error(`${key} 是必須的參數。`)
+    }
+    // check參數格式正確
+    if ( typeof(valid[key]) === 'function' ) {
+      valid[key](params[key])
+    } else {
+      if ( params[key].length !== valid[key]) {
+        throw new Error(`${key} length 不正確，length 需為 ${valid[key]}`)
+      }
+    }
+
+  }
+
 }
 
 module.exports = transactionHandler;

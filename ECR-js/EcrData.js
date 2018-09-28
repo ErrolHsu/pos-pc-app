@@ -39,6 +39,9 @@ class Transaction {
     for(let value of DataArray) {
       str += value;
     }
+    if (str.length !== 600) {
+      throw new Error('交易資料長度不正確。')
+    }
     return str;
   }
 

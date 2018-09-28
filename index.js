@@ -15,28 +15,39 @@ SerialPortHelper.printPortList();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 決定交易種類
-app.use(transactionHandler);
-
-
 // 允許跨域 AJAX
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", '*');
   next();
 })
 
-// 
+// 決定交易種類
+app.use(transactionHandler);
+
+// error handling
 app.use(function(err, req, res, next) {
   logger.error('request', err.message);
-  res.status(500).send(err);
+
+  let res_object = {
+    message: err.message
+  }
+
+  res.status(400)
+  res.send(res_object);
 });
 
 app.get('/', (req, res) => {
-  // TODO 之後刪掉
-  console.log(config.get('env'));
-  // ...........
-  let transaction = req.transaction;
-  let data = transaction.PackTransactionData();
+  let transaction;
+  let data;
+
+  try {
+    transaction = req.transaction;
+    data = transaction.PackTransactionData();
+  } catch (err) {
+    res.status(400);
+    res.send(JSON.stringify({message: err.message}));
+    return
+  }
 
   ecr.call(data).then((response) => {
 
