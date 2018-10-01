@@ -78,6 +78,7 @@ function generateTrasaction(params) {
       throw new Error('不支援的交易種類。')
       return;
   }
+  logger.log(JSON.stringify(transaction, null, 4))
   return transaction;
 }
 

@@ -13,12 +13,14 @@ let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 //   callback && callback();
 // })
 
-async function call(data) {
+async function call(transaction) {
+
   if (port.isOpen) {
     return Promise.reject(new Error('上筆交易尚未完成...'));
   };
 
   try {
+    let data = transaction.PackTransactionData();
     await openPort();
     await sendTransactionData(port, data);
     let responseObject = await ReceiveData();
@@ -126,6 +128,7 @@ function ReceiveData() {
           logger.log('EDC回傳response');
           logger.log('Check LRC ....');
           // check LRC & check 資料長度
+          // 資料正確
           if (checkLrc(receiveBuffer) && checkDataLength(receiveBuffer)) {
             logger.log('LRC correct');
             logger.log('Data length correct');
@@ -138,6 +141,7 @@ function ReceiveData() {
             // 解析 response
             transaction_response = new Transaction();
             transaction_response.parseResponse(responseStr);
+            logger.log(JSON.stringify(transaction_response, null, 4))
             return resolve(transaction_response);
           // LRC或資料長度錯誤
           } else {

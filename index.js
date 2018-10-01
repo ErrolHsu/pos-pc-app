@@ -37,25 +37,15 @@ app.use(function(err, req, res, next) {
 });
 
 app.get('/', (req, res) => {
-  let transaction;
-  let data;
 
-  try {
-    transaction = req.transaction;
-    data = transaction.PackTransactionData();
-  } catch (err) {
-    res.status(400);
-    res.send(JSON.stringify({message: err.message}));
-    return
-  }
+  let transaction = req.transaction;
 
-  ecr.call(data).then((response) => {
+  ecr.call(transaction).then((response) => {
 
     let res_object = {
       response_code: response.data.ecrResponseCode,
       transaction_data: response.data
     }
-
     res.send(JSON.stringify(res_object));
   }).catch((err) => {
     logger.warn('Transaction Request' , `交易失敗 ${err.message}`);
