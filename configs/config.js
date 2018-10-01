@@ -56,6 +56,11 @@ let config = convict({
       format: String,
       default: 'even',
       arg: 'parity'
+    },
+    mode: {
+      format: ['normal', 'test'],
+      default: 'normal',
+      arg: 'ecr_mode'
     }
   }
   // db: {

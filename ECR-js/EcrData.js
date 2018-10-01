@@ -45,17 +45,6 @@ class Transaction {
     return str;
   }
 
-  // read test file
-  readIn() {
-    return new Promise((resolve, reject) => {
-      let filePath = path.resolve(__dirname, '../in.dat');
-      fs.readFile(filePath, (err, data) => {
-        logger.log(data);
-        resolve(data);
-      });
-    });
-  }
-
   initData() {
     this.data = {
       // 交易別(Transaction Type), length:2

@@ -1,9 +1,11 @@
+const fs = require('fs');
 const SerialPort = require("serialport");
 const { Transaction } = require('./EcrData');
 const ECR_CONFIG = require('./EcrConfig');
 const logger = require('../modules/logger');
 const config = require('../configs/config');
 const ECR_TIMEOUT = config.get('ecr.timeout')
+const path_helper = require('../modules/path_helper');
 
 let port = new SerialPort(ECR_CONFIG.portName, ECR_CONFIG.PORT_SETTING);
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -14,6 +16,11 @@ let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 // })
 
 async function call(transaction) {
+  // 開卡機測試模式時直接回假資料
+  if (config.get('ecr.mode') === 'test' ) {
+    let responseObject = await getMockResponse(transaction);
+    return Promise.resolve(responseObject);
+  }
 
   if (port.isOpen) {
     return Promise.reject(new Error('上筆交易尚未完成...'));
@@ -139,7 +146,7 @@ function ReceiveData() {
             clearTimeout(timeout);
             await sendAck();
             // 解析 response
-            transaction_response = new Transaction();
+            let transaction_response = new Transaction();
             transaction_response.parseResponse(responseStr);
             logger.log(JSON.stringify(transaction_response, null, 4))
             return resolve(transaction_response);
@@ -262,6 +269,43 @@ function closePort() {
     port.close();
     logger.log('port closed');
   }
+}
+
+// 回傳測試假資料
+function getMockResponse (transaction) {
+  return new Promise((resolve, reject) => {
+    let file_name;
+    console.log(transaction.data.transType)
+    switch (transaction.data.transType) {
+      case '01':
+      file_name = 'sale.txt'
+      break;
+      case '02':
+      file_name = 'refund.txt'
+      break;
+      case '30':
+      file_name = 'cancel.txt'
+      break;
+      case '04':
+      file_name = 'installment.txt'
+      break;
+      default:
+        file_name = 'cancel.txt'
+      break;
+    }
+
+    let filePath = path_helper.join(`mock_data/${file_name}`)
+    console.log(filePath)
+    fs.readFile(filePath, 'ascii', (err, responseStr) => {
+      let transaction_response = new Transaction();
+      transaction_response.parseResponse(responseStr);
+      logger.log('回傳測試假資料')
+      logger.log(JSON.stringify(transaction_response, null, 4))
+      setTimeout(() => {
+        return resolve(transaction_response);
+      })
+    });
+  })
 }
 
 exports.call = call;

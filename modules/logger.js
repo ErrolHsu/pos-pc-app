@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const moment = require('moment-timezone');
 const config = require('../configs/config');
-const path_helper = require('../modules/path_helper');
+const path_helper = require('./path_helper');
 
 const log_path = path_helper.join(`logs/process-logs/${config.get('env')}-${currentDate()}.txt`);
 const error_log_path = path_helper.join(`logs/error-logs/${config.get('env')}-${currentDate()}.txt`);

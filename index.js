@@ -57,6 +57,7 @@ app.get('/', (req, res) => {
     res.status(400);
     res.send(JSON.stringify(res_object));
   });
+
 });
 
 app.listen(config.get('port'), () => {
