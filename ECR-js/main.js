@@ -17,7 +17,7 @@ let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function call(transaction) {
   // 開卡機測試模式時直接回假資料
-  if (config.get('ecr.mode') === 'test' ) {
+  if (config.get('ecr.mode') === 'test' || config.get('env') === 'test') {
     let responseObject = await getMockResponse(transaction);
     return Promise.resolve(responseObject);
   }
