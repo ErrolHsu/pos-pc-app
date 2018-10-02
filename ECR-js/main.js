@@ -22,11 +22,11 @@ async function call(transaction) {
   // 開卡機測試模式時直接回假資料
   if (config.get('ecr.mode') === 'test' || config.get('env') === 'test') {
     let responseObject = await getMockResponse(transaction);
-    return Promise.resolve(responseObject);
+    return responseObject;
   }
 
   if (port.isOpen) {
-    return Promise.reject(new Error('上筆交易尚未完成...'));
+    throw new Error('上筆交易尚未完成...');
   };
 
   try {
@@ -35,10 +35,10 @@ async function call(transaction) {
     await sendTransactionData(port, data);
     let responseObject = await ReceiveData();
     closePort();
-    return Promise.resolve(responseObject);
+    return responseObject;
   } catch(err) {
     port.emit('error', err);
-    return Promise.reject(err);
+    throw err;
   }
 }
 
@@ -68,34 +68,38 @@ async function sendTransactionData(port, transaction_data) {
 
     async function ackHandler(data) {
       receiveArray.push(data)
-      if (Buffer.concat(receiveArray).length === 2) {
-        // 收到ACK
-        if (checkAck(Buffer.concat(receiveArray))) {
+
+      if (Buffer.concat(receiveArray).length !== 2) {
+        return
+      }
+
+      // 收到ACK
+      if (checkAck(Buffer.concat(receiveArray))) {
+        // 移除監聽與timeout
+        port.removeListener('data', ackHandler);
+        clearTimeout(ack_timeout);
+        console.log('EDC回傳ACK');
+        return resolve('Receive ACK');
+      // 收到NAK
+      } else {
+        if (retry === 3) {
           // 移除監聽與timeout
           port.removeListener('data', ackHandler);
           clearTimeout(ack_timeout);
-          console.log('EDC回傳ACK');
-          return resolve('Receive ACK');
-        // 收到NAK
+          logger.warn('ackHandler' , '端末機拒絕交易');
+          return reject(new Error('EDC拒絕交易。'));
         } else {
-          if (retry === 3) {
-            // 移除監聽與timeout
-            port.removeListener('data', ackHandler);
-            clearTimeout(ack_timeout);
-            logger.warn('ackHandler' , '端末機拒絕交易');
-            return reject(new Error('EDC拒絕交易。'));
-          } else {
-            logger.warn('ackHandler' , '端末機回傳NAK');
-            retry += 1;
-            receiveArray = [];
-            clearTimeout(ack_timeout);
-            await wait(1000);
-            console.log('retry')
-            await send(transaction_data);
-            ackTimeout();
-          }
+          logger.warn('ackHandler' , '端末機回傳NAK');
+          retry += 1;
+          receiveArray = [];
+          clearTimeout(ack_timeout);
+          await wait(1000);
+          console.log('retry')
+          await send(transaction_data);
+          ackTimeout();
         }
       }
+
     }
 
     port.on('data', ackHandler);
@@ -121,54 +125,63 @@ function ReceiveData() {
       try {
         receiveArray.push(data);
         console.log(data);
+
+        let receiveBuffer = Buffer.concat(receiveArray);
+
         // receive data until ETX
-        if (data[data.length - 2] === 3) {
-          receiveBuffer = Buffer.concat(receiveArray);
-          // 送NAK給EDC測試機時會一次收到1206byte，不知道為何
-          console.log(receiveBuffer.length)
-          if (receiveBuffer.length > 603) {
-            retry += (receiveBuffer.length / 603) - 1
-            console.log(`retry is ${retry}`)
-            receiveBuffer = receiveBuffer.slice(0, 603);
-            console.log('=================================')
-            console.log(receiveBuffer)
-            console.log('=================================')
-          }
-          logger.log('EDC回傳response');
-          logger.log('Check LRC ....');
-          // check LRC & check 資料長度
-          // 資料正確
-          if (checkLrc(receiveBuffer) && checkDataLength(receiveBuffer)) {
-            logger.log('LRC correct');
-            logger.log('Data length correct');
-            logger.log(`response data: ${receiveBuffer.toString('ascii')}`);
-            let responseStr = receiveBuffer.slice(1, -2).toString('ascii');
-            // 移除監聽與timeout
+        if (receiveBuffer[receiveBuffer.length -2] !== 3) {
+          return
+        }
+
+        // 送NAK給EDC測試機時 會一次收到1206byte，不知道為何
+        if (receiveBuffer.length === 1206) {
+          await sendAck();
+          retry += (receiveBuffer.length / 603) - 1
+          console.log(`retry is ${retry}`)
+          receiveBuffer = receiveBuffer.slice(603, 1206);
+          console.log('=================================')
+          console.log(receiveBuffer)
+          console.log('=================================')
+        }
+
+        console.log(receiveBuffer.length)
+        logger.log('EDC回傳response');
+        logger.log('Check LRC ....');
+
+        // check LRC & check 資料長度
+        // 資料正確
+        if (checkLrc(receiveBuffer) && checkDataLength(receiveBuffer)) {
+        // if (retry === 2) {
+          logger.log('LRC correct');
+          logger.log('Data length correct');
+          logger.log(`response data: ${receiveBuffer.toString('ascii')}`);
+          let responseStr = receiveBuffer.slice(1, -2).toString('ascii');
+          // 移除監聽與timeout
+          port.removeListener('data', responseHandler);
+          clearTimeout(timeout);
+          await sendAck();
+          // 解析 response
+          let transaction_response = new Transaction();
+          transaction_response.parseResponse(responseStr);
+          logger.log(JSON.stringify(transaction_response, null, 4))
+          return resolve(transaction_response);
+        // LRC或資料長度錯誤
+        } else {
+          if (retry === 2) {
+            await sendNak();
             port.removeListener('data', responseHandler);
             clearTimeout(timeout);
-            await sendAck();
-            // 解析 response
-            let transaction_response = new Transaction();
-            transaction_response.parseResponse(responseStr);
-            logger.log(JSON.stringify(transaction_response, null, 4))
-            return resolve(transaction_response);
-          // LRC或資料長度錯誤
+            logger.warn('responseHandler' , 'LRC或資料長度錯誤，無法確認交易結果。');
+            return reject(new Error('LRC或資料長度錯誤，無法確認交易結果。'));
           } else {
-            if (retry === 3) {
-              await sendNak();
-              port.removeListener('data', responseHandler);
-              clearTimeout(timeout);
-              logger.warn('responseHandler' , 'LRC或資料長度錯誤，交易取消');
-              return reject(new Error('LRC或資料長度錯誤，交易取消'));
-            } else {
-              logger.warn('responseHandler' , 'LRC或資料長度錯誤，重新接收資料...');
-              retry += 1;
-              receiveArray = [];
-              await sendNak();
-            }
-
+            logger.warn('responseHandler' , 'LRC或資料長度錯誤，重新接收資料...');
+            retry += 1;
+            receiveArray = [];
+            await sendNak();
           }
-        };
+
+        }
+
       } catch(err) {
         return reject(err);
       }
