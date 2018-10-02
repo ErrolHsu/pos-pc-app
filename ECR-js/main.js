@@ -10,10 +10,13 @@ const path_helper = require('../modules/path_helper');
 let port = new SerialPort(ECR_CONFIG.portName, ECR_CONFIG.PORT_SETTING);
 let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-// port.on('error', function(err, callback) {
-//   closePort();
-//   callback && callback();
-// })
+port.on('error',async function(err, callback) {
+  await wait(5000);
+  port.flush(() => {
+    closePort();
+  });
+  callback && callback();
+})
 
 async function call(transaction) {
   // 開卡機測試模式時直接回假資料
@@ -34,8 +37,7 @@ async function call(transaction) {
     closePort();
     return Promise.resolve(responseObject);
   } catch(err) {
-    // port.emit('error', err);
-    closePort();
+    port.emit('error', err);
     return Promise.reject(err);
   }
 }
@@ -164,6 +166,7 @@ function ReceiveData() {
               receiveArray = [];
               await sendNak();
             }
+
           }
         };
       } catch(err) {
@@ -266,8 +269,10 @@ function openPort() {
 
 function closePort() {
   if (port.isOpen) {
-    port.close();
-    logger.log('port closed');
+    port.flush(() => {
+      port.close();
+      logger.log('port closed');
+    })
   }
 }
 
