@@ -1,11 +1,8 @@
-const path = require('path');
 const express = require('express');
 const config = require('./configs/config');
 
 const app = express();
 const ecr = require('./ECR-js/main');
-const ECR_CONFIG = require('./ECR-js/EcrConfig');
-const { Transaction } = require('./ECR-js/EcrData');
 const transactionHandler = require('./middleware/transaction_handler');
 const logger = require('./modules/logger');
 const SerialPortHelper = require('./modules/serial_port_helper');
@@ -29,33 +26,33 @@ app.use(transactionHandler);
 app.use((err, req, res, next) => {
   logger.error('request', err.message);
 
-  const res_object = {
+  const resObject = {
     message: err.message,
   };
 
   res.status(400);
-  res.send(res_object);
+  res.send(resObject);
 });
 
 app.get('/', (req, res) => {
-  const transaction = req.transaction;
+  const { transaction } = req;
 
   ecr.call(transaction).then((response) => {
-    const res_object = {
+    const resObject = {
       response_code: response.data.ecrResponseCode,
       transaction_data: response.data,
     };
     logger.log('交易完成');
-    res.send(JSON.stringify(res_object));
+    res.send(JSON.stringify(resObject));
   }).catch((err) => {
     logger.warn('Transaction Request', `交易失敗 ${err.message}`);
 
-    const res_object = {
+    const resObject = {
       message: err.message,
     };
 
     res.status(400);
-    res.send(JSON.stringify(res_object));
+    res.send(JSON.stringify(resObject));
   });
 });
 
