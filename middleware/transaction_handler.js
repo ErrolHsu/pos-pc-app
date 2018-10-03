@@ -116,7 +116,7 @@ function checkParams (keys, params) {
   }
 
   if ( 'storeID' in params ) {
-    if ( params['storeID'].length !== 7 ) {
+    if ( params['storeID'].length !== 20 ) {
       throw new Error("storeID length 不正確，length 需為 20")
     }
   }
