@@ -3,7 +3,7 @@ const logger = require('../modules/logger');
 
 function transactionHandler(req, res, next) {
   // params = req.params
-  params = req.query;
+  const params = req.query;
   logger.log(JSON.stringify(params));
   const transaction = generateTrasaction(params);
   req.transaction = transaction;
@@ -76,7 +76,6 @@ function generateTrasaction(params) {
       break;
     default:
       throw new Error('不支援的交易種類。');
-      break;
   }
   logger.log(JSON.stringify(transaction, null, 4));
   return transaction;
