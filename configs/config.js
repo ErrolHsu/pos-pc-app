@@ -1,68 +1,68 @@
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config({ path: find_env_file() });
+require('dotenv').config({ path: findEnvFile() });
 const convict = require('convict');
-const path_helper = require('../modules/path_helper');
+const pathHelper = require('../modules/path_helper');
 
-function find_env_file() {
-  return fs.existsSync(path.resolve(path.dirname(process.execPath), '.node_env')) ? path.resolve(path.dirname(process.execPath), '.node_env') : path.resolve(__dirname, '../.node_env')
+function findEnvFile() {
+  return fs.existsSync(path.resolve(path.dirname(process.execPath), '.node_env')) ? path.resolve(path.dirname(process.execPath), '.node_env') : path.resolve(__dirname, '../.node_env');
 }
 
 // configs/env.json schema
-let config = convict({
+const config = convict({
   env: {
-    format: ["production", "development", "test"],
-    default: "development",
-    env: "NODE_ENV"
+    format: ['production', 'development', 'test'],
+    default: 'development',
+    env: 'NODE_ENV',
   },
   port: {
-    format: "port",
+    format: 'port',
     default: 3000,
-    env: "PORT",
-    arg: "port"
+    env: 'PORT',
+    arg: 'port',
   },
   ecr: {
     timeout: {
       format: 'int',
       default: 60000,
-      arg: 'timeout'
+      arg: 'timeout',
     },
     portName: {
       format: String,
       default: 'COM2',
-      arg: 'portName'
+      arg: 'portName',
     },
     autoOpen: {
       format: Boolean,
       default: false,
-      arg: "autoOpen"
+      arg: 'autoOpen',
     },
     baudRate: {
       format: 'int',
       default: 9600,
-      arg: 'baudRate'
+      arg: 'baudRate',
     },
     dataBits: {
       format: 'int',
       default: 7,
-      arg: 'dataBits'
+      arg: 'dataBits',
     },
     stopBits: {
       format: 'int',
       default: 1,
-      arg: 'stopBits'
+      arg: 'stopBits',
     },
     parity: {
       format: String,
       default: 'even',
-      arg: 'parity'
+      arg: 'parity',
     },
     mode: {
       format: ['normal', 'test'],
       default: 'normal',
-      arg: 'ecr_mode'
-    }
-  }
+      arg: 'ecr_mode',
+    },
+  },
   // db: {
   //   host: {
   //     doc: "Database host name/IP",
@@ -79,12 +79,12 @@ let config = convict({
 
 // Load environment dependent env
 const env = config.get('env');
-const config_path = path_helper.join(`configs/${env}.json`);
+const configPath = pathHelper.join(`configs/${env}.json`);
 
-console.log(`environment is ${env}`)
+console.log(`environment is ${env}`);
 
 // load & valid config
-config.loadFile(config_path);
+config.loadFile(configPath);
 config.validate({ allowed: 'strict' });
 
 module.exports = config;

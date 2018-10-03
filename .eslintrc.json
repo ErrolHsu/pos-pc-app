@@ -1,3 +1,8 @@
 {
-    "extends": "airbnb-base"
+    "extends": "airbnb",
+    "rules": {
+      "no-use-before-define": ["error", { "functions": false, "classes": true }],
+      "no-bitwise": ["error", { "allow": ["^="] }],
+      "max-len": ["error", { "code": 150 }]
+    }
 }

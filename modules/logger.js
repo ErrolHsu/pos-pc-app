@@ -31,24 +31,24 @@ function log(message) {
 // help methods
 
 function process_message(message) {
-  let full_message = `[${currentDateTime()}] ${message} \r\n`
+  const full_message = `[${currentDateTime()}] ${message} \r\n`;
   return full_message;
 }
 
 function error_message(level, action, message) {
-  let full_message = `${level} [${currentDateTime()}][${action}] ${message} \r\n`
+  const full_message = `${level} [${currentDateTime()}][${action}] ${message} \r\n`;
   return full_message;
 }
 
 // datetime
 
 function currentDateTime() {
-  return moment().tz("Asia/Taipei").format('YYYY-MM-DD HH:mm:ss ZZ');
+  return moment().tz('Asia/Taipei').format('YYYY-MM-DD HH:mm:ss ZZ');
   // return (new Date()).toISOString().replace(/T/, ' ').replace(/\..+/, '')
 }
 
 function currentDate() {
-  return moment().tz("Asia/Taipei").format('YYYY-MM-DD');
+  return moment().tz('Asia/Taipei').format('YYYY-MM-DD');
 }
 
 module.exports = { log, error, warn };

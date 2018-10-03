@@ -1,15 +1,9 @@
-const path = require('path');
-const fs = require('fs');
-const ECR_CONST = require('./EcrConst')
+const ECR_CONST = require('./EcrConst');
 const logger = require('../modules/logger');
 
 const STX = Buffer.from([2]);
 
 const ETX = Buffer.from([3]);
-
-const ACK = Buffer.from([6]);
-
-const NAK = Buffer.from([21]);
 
 const DATA_COLS = [
   // 交易別(Transaction Type), length:2
@@ -82,58 +76,58 @@ const DATA_COLS = [
   ['ticketBalance', 10],
   // 保留
   ['reserve', 98],
-]
+];
 
 function initData() {
-  let data = {}
-  for (let [name, len] of DATA_COLS) {
-    data[name] = buildEmptyString(len)
+  const data = {};
+  for (const [name, len] of DATA_COLS) {
+    data[name] = buildEmptyString(len);
   }
 
-  return data
+  return data;
 }
 
 function parseResponse(res) {
-  let data = {}
-  let begin = 0
+  const data = {};
+  let begin = 0;
 
-  for (let [name, len] of DATA_COLS) {
-    data[name] = res.substr(begin, len)
-    begin += len
+  for (const [name, len] of DATA_COLS) {
+    data[name] = res.substr(begin, len);
+    begin += len;
   }
 
-  return data
+  return data;
 }
 
 class Transaction {
-  constructor(object) {
+  constructor() {
     this.data = initData();
   }
 
   // 打包交易資料
   PackTransactionData() {
     logger.log('Preparing transaction data...');
-    const data_str = this.dataToString();
-    const data_buffer = Buffer.from(data_str, 'ascii');
+    const dataStr = this.dataToString();
+    const dataBuffer = Buffer.from(dataStr, 'ascii');
 
     // 計算LRC
-    let lrc = Transaction.calcLrc(Buffer.concat([data_buffer, ETX]));
+    const lrc = Transaction.calcLrc(Buffer.concat([dataBuffer, ETX]));
 
     // 送出的request為 <STX>[DATA]<ETX><LRC>
-    let transaction_Data = Buffer.concat([STX, data_buffer, ETX, lrc]);
+    const transactionData = Buffer.concat([STX, dataBuffer, ETX, lrc]);
 
-    return transaction_Data;
+    return transactionData;
   }
 
   // 將data組成string
   dataToString() {
-    let DataArray = Object.values(this.data);
+    const DataArray = Object.values(this.data);
     let str = '';
-    for(let value of DataArray) {
+    for (const value of DataArray) {
       str += value;
     }
     if (str.length !== 600) {
-      throw new Error('交易資料長度不正確。')
+      throw new Error('交易資料長度不正確。');
     }
     return str;
   }
@@ -142,27 +136,27 @@ class Transaction {
   // parse response
   // data 為 600byte string
   parseResponse(res) {
-    this.data = parseResponse(res)
-  };
+    this.data = parseResponse(res);
+  }
 
   // Exclusive-Or all bytes of data & ETX (不包含 STX)
   static calcLrc(buffer) {
     let lrc = 0;
-    for(let byte of buffer) {
+    for (const byte of buffer) {
       lrc ^= byte;
     }
     logger.log(`LRC is ${lrc}`);
     return Buffer.from([lrc]);
   }
 
-  /****   Set Transaction Type     ***/
+  /** **   Set Transaction Type     ** */
 
   // 一般交易
   sale(transAmount, storeId) {
     this.data.transType = ECR_CONST.TRANS_TYPE_SALE;
     this.data.transAmount = transAmount;
     // 選填
-    if(storeId) {
+    if (storeId) {
       this.data.storeId = storeId;
     }
   }
@@ -173,13 +167,12 @@ class Transaction {
     this.data.hostID = ECR_CONST.HOST_ID_INSTALL;
     this.data.transAmount = transAmount;
     // 選填
-    if(storeId) {
+    if (storeId) {
       this.data.storeId = storeId;
     }
-    if(productCode) {
+    if (productCode) {
       this.data.productCode = productCode;
     }
-
   }
 
   // 退貨
@@ -190,7 +183,7 @@ class Transaction {
     this.data.approvalCode = approvalCode;
     this.data.referenceNo = referenceNo;
     // 選填
-    if(storeId) {
+    if (storeId) {
       this.data.storeId = storeId;
     }
   }
@@ -212,7 +205,7 @@ class Transaction {
     this.data.transType = ECR_CONST.TRANS_TYPE_TERMINATE;
   }
 
-  /****    銀聯卡     ***/
+  /** **    銀聯卡     ** */
 
   // CUP一般交易
   CUPSale(transAmount, storeId) {
@@ -220,7 +213,7 @@ class Transaction {
     this.data.hostID = ECR_CONST.HOST_ID_ESUN_CUP;
     this.data.transAmount = transAmount;
     // 選填
-    if(storeId) {
+    if (storeId) {
       this.data.storeId = storeId;
     }
   }
@@ -233,7 +226,7 @@ class Transaction {
     this.data.approvalCode = approvalCode;
     this.data.referenceNo = referenceNo;
     // 選填
-    if(storeId) {
+    if (storeId) {
       this.data.storeId = storeId;
     }
   }
@@ -245,7 +238,7 @@ class Transaction {
     this.data.receiptNo = receiptNo;
   }
 
-  /****    BarCode     ***/
+  /** **    BarCode     ** */
 
   // 掃碼交易
   barCodeSale(transAmount, orderInformation) {
@@ -253,7 +246,7 @@ class Transaction {
     this.data.hostID = ECR_CONST.HOST_ID_ESUN_BARCODE;
     this.data.transAmount = transAmount;
 
-    if(orderInformation) {
+    if (orderInformation) {
       this.data.orderInformation = orderInformation;
     }
   }
@@ -264,11 +257,11 @@ class Transaction {
     this.data.hostID = ECR_CONST.HOST_ID_ESUN_BARCODE;
     this.data.transAmount = transAmount;
 
-    if(orderInformation) {
+    if (orderInformation) {
       this.data.orderInformation = orderInformation;
     }
 
-    if(orderNumber) {
+    if (orderNumber) {
       this.data.orderNumber = orderNumber;
     }
   }
@@ -278,16 +271,16 @@ class Transaction {
     this.data.transType = ECR_CONST.TRANS_TYPE_BARCODE_VOID;
     this.data.hostID = ECR_CONST.HOST_ID_ESUN_BARCODE;
 
-    if(orderInformation) {
+    if (orderInformation) {
       this.data.orderInformation = orderInformation;
     }
 
-    if(orderNumber) {
+    if (orderNumber) {
       this.data.orderNumber = orderNumber;
     }
   }
 
-  /****    悠遊卡，一卡通等票卡     ***/
+  /** **    悠遊卡，一卡通等票卡     ** */
 
   // 票卡一般交易
   ticketSale(transType, hostID, transAmount) {
@@ -302,7 +295,7 @@ class Transaction {
     this.data.hostID = hostID;
     this.data.transAmount = transAmount;
     this.data.referenceNo = referenceNo;
-    if(ticketReferenceNumber) {
+    if (ticketReferenceNumber) {
       this.data.ticketReferenceNumber = ticketReferenceNumber;
     }
   }
@@ -314,7 +307,7 @@ class Transaction {
 
   // 悠遊卡退貨
   easyCardRefund(transAmount, referenceNo) {
-    this.ticketRefund(ECR_CONST.TRANS_TYPE_EASY_CARD_REFUND, ECR_CONST.HOST_ID_EASY_CARD, transAmount, referenceNo)
+    this.ticketRefund(ECR_CONST.TRANS_TYPE_EASY_CARD_REFUND, ECR_CONST.HOST_ID_EASY_CARD, transAmount, referenceNo);
   }
 
   // 一卡通一般交易
@@ -324,7 +317,7 @@ class Transaction {
 
   // 一卡通退貨
   iPassRefund(transAmount, referenceNo, ticketReferenceNumber) {
-    this.ticketRefund(ECR_CONST.TRANS_TYPE_IPASS_REFUND, ECR_CONST.HOST_ID_IPASS, transAmount, referenceNo, ticketReferenceNumber)
+    this.ticketRefund(ECR_CONST.TRANS_TYPE_IPASS_REFUND, ECR_CONST.HOST_ID_IPASS, transAmount, referenceNo, ticketReferenceNumber);
   }
 
   // icash一般交易
@@ -334,7 +327,7 @@ class Transaction {
 
   // icash退貨
   iCashRefund(transAmount, referenceNo) {
-    this.ticketRefund(ECR_CONST.TRANS_TYPE_ICASH_REFUND, ECR_CONST.HOST_ID_ICASH, transAmount, referenceNo)
+    this.ticketRefund(ECR_CONST.TRANS_TYPE_ICASH_REFUND, ECR_CONST.HOST_ID_ICASH, transAmount, referenceNo);
   }
 
   // HappyCash一般交易
@@ -344,15 +337,14 @@ class Transaction {
 
   // HappyCash退貨
   happyCashRefund(transAmount, referenceNo) {
-    this.ticketRefund(ECR_CONST.TRANS_TYPE_HAPPY_CASH_REFUND, ECR_CONST.HOST_ID_HAPPY_CASH, transAmount, referenceNo)
+    this.ticketRefund(ECR_CONST.TRANS_TYPE_HAPPY_CASH_REFUND, ECR_CONST.HOST_ID_HAPPY_CASH, transAmount, referenceNo);
   }
-
 } // Transaction class end
 
 
 function buildEmptyString(length) {
   let str = '';
-  for(i = 0; i <  length; i++) {
+  for (let i = 0; i < length; i += 1) {
     str += '\xa0';
   }
   return str;

@@ -1,15 +1,14 @@
 const path = require('path');
 
-function root_path() {
+function rootPath() {
   if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test') {
-    return path.join(path.dirname(process.execPath))
-  } else {
-    return path.join(__dirname, "../")
+    return path.join(path.dirname(process.execPath));
   }
+  return path.join(__dirname, '../');
 }
 
-function join(file_path) {
-  return path.join(root_path(), file_path)
+function join(filePath) {
+  return path.join(rootPath(), filePath);
 }
 
-module.exports = { root_path, join };
+module.exports = { rootPath, join };

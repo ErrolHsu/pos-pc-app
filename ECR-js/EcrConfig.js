@@ -9,7 +9,6 @@ const ECR_CONFIG = {
     stopBits: config.get('ecr.stopBits'),
     parity: config.get('ecr.parity'),
   },
-}
+};
 
 module.exports = ECR_CONFIG;
-

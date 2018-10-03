@@ -1,6 +1,7 @@
-const config = require('./configs/config');
 const path = require('path');
 const express = require('express');
+const config = require('./configs/config');
+
 const app = express();
 const ecr = require('./ECR-js/main');
 const ECR_CONFIG = require('./ECR-js/EcrConfig');
@@ -17,50 +18,47 @@ app.use(express.urlencoded({ extended: true }));
 
 // 允許跨域 AJAX
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", '*');
+  res.header('Access-Control-Allow-Origin', '*');
   next();
-})
+});
 
 // 決定交易種類
 app.use(transactionHandler);
 
 // error handling
-app.use(function(err, req, res, next) {
+app.use((err, req, res, next) => {
   logger.error('request', err.message);
 
-  let res_object = {
-    message: err.message
-  }
+  const res_object = {
+    message: err.message,
+  };
 
-  res.status(400)
+  res.status(400);
   res.send(res_object);
 });
 
 app.get('/', (req, res) => {
-
-  let transaction = req.transaction;
+  const transaction = req.transaction;
 
   ecr.call(transaction).then((response) => {
-
-    let res_object = {
+    const res_object = {
       response_code: response.data.ecrResponseCode,
-      transaction_data: response.data
-    }
-    logger.log('交易完成')
+      transaction_data: response.data,
+    };
+    logger.log('交易完成');
     res.send(JSON.stringify(res_object));
   }).catch((err) => {
-    logger.warn('Transaction Request' , `交易失敗 ${err.message}`);
+    logger.warn('Transaction Request', `交易失敗 ${err.message}`);
 
-    let res_object = {
-      message: err.message
-    }
+    const res_object = {
+      message: err.message,
+    };
 
     res.status(400);
     res.send(JSON.stringify(res_object));
   });
-
 });
 
 app.listen(config.get('port'), () => {
-  console.log(`listening on port ${config.get('port')}`)
+  console.log(`listening on port ${config.get('port')}`);
 });

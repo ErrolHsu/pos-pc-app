@@ -1,42 +1,43 @@
 const fs = require('fs');
-const SerialPort = require("serialport");
+const SerialPort = require('serialport');
 const { Transaction } = require('./EcrData');
 const ECR_CONFIG = require('./EcrConfig');
 const logger = require('../modules/logger');
 const config = require('../configs/config');
-const ECR_TIMEOUT = config.get('ecr.timeout')
+
+const ECR_TIMEOUT = config.get('ecr.timeout');
 const path_helper = require('../modules/path_helper');
 
-let port = new SerialPort(ECR_CONFIG.portName, ECR_CONFIG.PORT_SETTING);
-let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+const port = new SerialPort(ECR_CONFIG.portName, ECR_CONFIG.PORT_SETTING);
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-port.on('error',async function(err, callback) {
+port.on('error', async (err, callback) => {
   await wait(5000);
   port.flush(() => {
     closePort();
   });
   callback && callback();
-})
+});
 
 async function call(transaction) {
   // 開卡機測試模式時直接回假資料
   if (config.get('ecr.mode') === 'test' || config.get('env') === 'test') {
-    let responseObject = await getMockResponse(transaction);
+    const responseObject = await getMockResponse(transaction);
     return responseObject;
   }
 
   if (port.isOpen) {
     throw new Error('上筆交易尚未完成...');
-  };
+  }
 
   try {
-    let data = transaction.PackTransactionData();
+    const data = transaction.PackTransactionData();
     await openPort();
     await sendTransactionData(port, data);
-    let responseObject = await ReceiveData();
+    const responseObject = await ReceiveData();
     closePort();
     return responseObject;
-  } catch(err) {
+  } catch (err) {
     port.emit('error', err);
     throw err;
   }
@@ -55,7 +56,7 @@ async function sendTransactionData(port, transaction_data) {
       ack_timeout = setTimeout(() => {
         // 移除 ackHandler
         port.removeListener('data', ackHandler);
-        logger.warn('ackTimeout' , '未收到端末機ACK');
+        logger.warn('ackTimeout', '未收到端末機ACK');
         return resolve();
       }, 1000);
     }
@@ -67,10 +68,10 @@ async function sendTransactionData(port, transaction_data) {
     let retry = 0;
 
     async function ackHandler(data) {
-      receiveArray.push(data)
+      receiveArray.push(data);
 
       if (Buffer.concat(receiveArray).length !== 2) {
-        return
+        return;
       }
 
       // 收到ACK
@@ -81,25 +82,22 @@ async function sendTransactionData(port, transaction_data) {
         console.log('EDC回傳ACK');
         return resolve('Receive ACK');
       // 收到NAK
-      } else {
-        if (retry === 3) {
-          // 移除監聽與timeout
-          port.removeListener('data', ackHandler);
-          clearTimeout(ack_timeout);
-          logger.warn('ackHandler' , '端末機拒絕交易');
-          return reject(new Error('EDC拒絕交易。'));
-        } else {
-          logger.warn('ackHandler' , '端末機回傳NAK');
-          retry += 1;
-          receiveArray = [];
-          clearTimeout(ack_timeout);
-          await wait(1000);
-          console.log('retry')
-          await send(transaction_data);
-          ackTimeout();
-        }
       }
-
+      if (retry === 3) {
+        // 移除監聽與timeout
+        port.removeListener('data', ackHandler);
+        clearTimeout(ack_timeout);
+        logger.warn('ackHandler', '端末機拒絕交易');
+        return reject(new Error('EDC拒絕交易。'));
+      }
+      logger.warn('ackHandler', '端末機回傳NAK');
+      retry += 1;
+      receiveArray = [];
+      clearTimeout(ack_timeout);
+      await wait(1000);
+      console.log('retry');
+      await send(transaction_data);
+      ackTimeout();
     }
 
     port.on('data', ackHandler);
@@ -112,9 +110,9 @@ function ReceiveData() {
   return new Promise((resolve, reject) => {
     console.log('等待交易結果...');
     // timeout60秒
-    let timeout = setTimeout(() => {
+    const timeout = setTimeout(() => {
       port.removeListener('data', responseHandler);
-      logger.warn('ReceiveData' , '交易逾時');
+      logger.warn('ReceiveData', '交易逾時');
       return reject(new Error('交易逾時'));
     }, ECR_TIMEOUT);
 
@@ -129,8 +127,8 @@ function ReceiveData() {
         let receiveBuffer = Buffer.concat(receiveArray);
 
         // receive data until ETX
-        if (receiveBuffer[receiveBuffer.length -2] !== 3) {
-          return
+        if (receiveBuffer[receiveBuffer.length - 2] !== 3) {
+          return;
         }
 
         // 送NAK給EDC測試機時 會一次收到1206byte，不知道為何
@@ -140,7 +138,7 @@ function ReceiveData() {
           receiveBuffer = receiveBuffer.slice(603, 1206);
         }
 
-        console.log(receiveBuffer.length)
+        console.log(receiveBuffer.length);
         logger.log('EDC回傳response');
         logger.log('Check LRC ....');
 
@@ -151,37 +149,33 @@ function ReceiveData() {
           logger.log('LRC correct');
           logger.log('Data length correct');
           logger.log(`response data: ${receiveBuffer.toString('ascii')}`);
-          let responseStr = receiveBuffer.slice(1, -2).toString('ascii');
+          const responseStr = receiveBuffer.slice(1, -2).toString('ascii');
           // 移除監聽與timeout
           port.removeListener('data', responseHandler);
           clearTimeout(timeout);
           await sendAck();
           // 解析 response
-          let transaction_response = new Transaction();
+          const transaction_response = new Transaction();
           transaction_response.parseResponse(responseStr);
-          logger.log(JSON.stringify(transaction_response, null, 4))
+          logger.log(JSON.stringify(transaction_response, null, 4));
           return resolve(transaction_response);
         // LRC或資料長度錯誤
-        } else {
-          if (retry === 2) {
-            await sendNak();
-            port.removeListener('data', responseHandler);
-            clearTimeout(timeout);
-            logger.warn('responseHandler' , 'LRC或資料長度錯誤，無法確認交易結果。');
-            return reject(new Error('LRC或資料長度錯誤，無法確認交易結果。'));
-          } else {
-            logger.warn('responseHandler' , 'LRC或資料長度錯誤，重新接收資料...');
-            retry += 1;
-            receiveArray = [];
-            await sendNak();
-          }
-
         }
-
-      } catch(err) {
+        if (retry === 2) {
+          await sendNak();
+          port.removeListener('data', responseHandler);
+          clearTimeout(timeout);
+          logger.warn('responseHandler', 'LRC或資料長度錯誤，無法確認交易結果。');
+          return reject(new Error('LRC或資料長度錯誤，無法確認交易結果。'));
+        }
+        logger.warn('responseHandler', 'LRC或資料長度錯誤，重新接收資料...');
+        retry += 1;
+        receiveArray = [];
+        await sendNak();
+      } catch (err) {
         return reject(err);
       }
-    };
+    }
     port.on('data', responseHandler);
   });
 }
@@ -192,7 +186,7 @@ function send(data) {
   return new Promise((resolve, reject) => {
     port.write(data, (err) => {
       if (err) {
-        logger.error('send' , err.message);
+        logger.error('send', err.message);
         return reject(err);
       }
       logger.log(`send request data: ${data.toString('ascii')}`);
@@ -206,11 +200,11 @@ function send(data) {
 // 回傳ACK
 function sendAck() {
   return new Promise((resolve, reject) => {
-    let ack = Buffer.from([6]);
+    const ack = Buffer.from([6]);
     data = Buffer.concat([ack, ack]);
     port.write(data, (err) => {
       if (err) {
-        logger.error('sendAck' , err.message);
+        logger.error('sendAck', err.message);
         return reject(err);
       }
       return resolve();
@@ -222,14 +216,14 @@ function sendAck() {
 // 回傳NAK
 function sendNak() {
   return new Promise((resolve, reject) => {
-    let nak = Buffer.from([21]);
+    const nak = Buffer.from([21]);
     data = Buffer.concat([nak, nak]);
     port.write(data, (err) => {
       if (err) {
-        logger.error('sendNak' , err.message);
+        logger.error('sendNak', err.message);
         return reject(err);
       }
-      logger.log('send NAK to EDC')
+      logger.log('send NAK to EDC');
       return resolve();
     });
   });
@@ -237,16 +231,16 @@ function sendNak() {
 
 // 確認回傳的LRC正確
 function checkLrc(receiveBuffer) {
-  let receiveLrc = receiveBuffer.readUIntBE(receiveBuffer.length - 1, 1);
-  let data = receiveBuffer.slice(1, -1);
+  const receiveLrc = receiveBuffer.readUIntBE(receiveBuffer.length - 1, 1);
+  const data = receiveBuffer.slice(1, -1);
   let lrc = 0;
 
   logger.log(`EDC回傳Lrc ${receiveLrc}`);
 
-  for(byte of data) {
+  for (const byte of data) {
     lrc ^= byte;
   }
-  logger.log(`Lrc should be ${lrc}`)
+  logger.log(`Lrc should be ${lrc}`);
   return (lrc === receiveLrc);
 }
 
@@ -258,16 +252,16 @@ function checkDataLength(data) {
 
 // 確認收到ACK
 function checkAck(response) {
-  return (response.readUIntBE(0,1) === 6 && response.readUIntBE(1,1) === 6);
+  return (response.readUIntBE(0, 1) === 6 && response.readUIntBE(1, 1) === 6);
 }
 
 // Promise
 function openPort() {
   return new Promise((resolve, reject) => {
     // open port
-    port.open(function(err) {
+    port.open((err) => {
       if (err) {
-        logger.error('openPort' , err.message);
+        logger.error('openPort', err.message);
         return reject(err);
       }
       logger.log('port opening ...');
@@ -281,45 +275,43 @@ function closePort() {
     port.flush(() => {
       port.close();
       logger.log('port closed');
-    })
+    });
   }
 }
 
 // 回傳測試假資料
-function getMockResponse (transaction) {
+function getMockResponse(transaction) {
   return new Promise((resolve, reject) => {
     let file_name;
-    console.log(transaction.data.transType)
+    console.log(transaction.data.transType);
     switch (transaction.data.transType) {
       case '01':
-      file_name = 'sale.txt'
-      break;
+        file_name = 'sale.txt';
+        break;
       case '02':
-      file_name = 'refund.txt'
-      break;
+        file_name = 'refund.txt';
+        break;
       case '30':
-      file_name = 'cancel.txt'
-      break;
+        file_name = 'cancel.txt';
+        break;
       case '04':
-      file_name = 'installment.txt'
-      break;
+        file_name = 'installment.txt';
+        break;
       default:
-        file_name = 'cancel.txt'
-      break;
+        file_name = 'cancel.txt';
+        break;
     }
 
-    let filePath = path_helper.join(`mock_data/${file_name}`)
-    console.log(filePath)
+    const filePath = path_helper.join(`mock_data/${file_name}`);
+    console.log(filePath);
     fs.readFile(filePath, 'ascii', (err, responseStr) => {
-      let transaction_response = new Transaction();
+      const transaction_response = new Transaction();
       transaction_response.parseResponse(responseStr);
-      logger.log('回傳測試假資料')
-      logger.log(JSON.stringify(transaction_response, null, 4))
-      setTimeout(() => {
-        return resolve(transaction_response);
-      })
+      logger.log('回傳測試假資料');
+      logger.log(JSON.stringify(transaction_response, null, 4));
+      setTimeout(() => resolve(transaction_response));
     });
-  })
+  });
 }
 
 exports.call = call;
