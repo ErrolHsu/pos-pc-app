@@ -1,43 +1,42 @@
 const fs = require('fs');
-const path = require('path');
 const moment = require('moment-timezone');
 const config = require('../configs/config');
-const path_helper = require('./path_helper');
+const pathHelper = require('./path_helper');
 
-const log_path = path_helper.join(`logs/process-logs/${config.get('env')}-${currentDate()}.txt`);
-const error_log_path = path_helper.join(`logs/error-logs/${config.get('env')}-${currentDate()}.txt`);
+const logPath = pathHelper.join(`logs/process-logs/${config.get('env')}-${currentDate()}.txt`);
+const errorLogPath = pathHelper.join(`logs/error-logs/${config.get('env')}-${currentDate()}.txt`);
 
 // error logs
 
 function error(action, message) {
   console.log(message);
-  fs.appendFileSync(log_path, process_message(message));
-  fs.appendFileSync(error_log_path, error_message('ERROR', action, message));
+  fs.appendFileSync(logPath, processMessage(message));
+  fs.appendFileSync(errorLogPath, errorMessage('ERROR', action, message));
 }
 
 function warn(action, message) {
   console.log(message);
-  fs.appendFileSync(log_path, process_message(message));
-  fs.appendFileSync(error_log_path, error_message('WARN ', action, message));
+  fs.appendFileSync(logPath, processMessage(message));
+  fs.appendFileSync(errorLogPath, errorMessage('WARN ', action, message));
 }
 
 // process logs
 
 function log(message) {
   console.log(message);
-  fs.appendFileSync(log_path, process_message(message));
+  fs.appendFileSync(logPath, processMessage(message));
 }
 
 // help methods
 
-function process_message(message) {
-  const full_message = `[${currentDateTime()}] ${message} \r\n`;
-  return full_message;
+function processMessage(message) {
+  const fullMessage = `[${currentDateTime()}] ${message} \r\n`;
+  return fullMessage;
 }
 
-function error_message(level, action, message) {
-  const full_message = `${level} [${currentDateTime()}][${action}] ${message} \r\n`;
-  return full_message;
+function errorMessage(level, action, message) {
+  const fullMessage = `${level} [${currentDateTime()}][${action}] ${message} \r\n`;
+  return fullMessage;
 }
 
 // datetime
