@@ -6,7 +6,7 @@ const logger = require('../modules/logger');
 const config = require('../configs/config');
 
 const ECR_TIMEOUT = config.get('ecr.timeout');
-const path_helper = require('../modules/path_helper');
+const pathHelper = require('../modules/path_helper');
 
 const port = new SerialPort(ECR_CONFIG.portName, ECR_CONFIG.PORT_SETTING);
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -33,7 +33,7 @@ async function call(transaction) {
   try {
     const data = transaction.PackTransactionData();
     await openPort();
-    await sendTransactionData(port, data);
+    await sendTransactionData(data);
     const responseObject = await ReceiveData();
     closePort();
     return responseObject;
@@ -45,15 +45,15 @@ async function call(transaction) {
 
 // Promise
 // 將交易資料發送到端末機(EDC)
-async function sendTransactionData(port, transaction_data) {
-  await send(transaction_data);
+async function sendTransactionData(transactionData) {
+  await send(transactionData);
 
   return new Promise((resolve, reject) => {
-    let ack_timeout;
+    let timeout;
 
     function ackTimeout() {
       // 如果一秒內沒收到ACK/NAK先繼續往下做
-      ack_timeout = setTimeout(() => {
+      timeout = setTimeout(() => {
         // 移除 ackHandler
         port.removeListener('data', ackHandler);
         logger.warn('ackTimeout', '未收到端末機ACK');
@@ -78,7 +78,7 @@ async function sendTransactionData(port, transaction_data) {
       if (checkAck(Buffer.concat(receiveArray))) {
         // 移除監聽與timeout
         port.removeListener('data', ackHandler);
-        clearTimeout(ack_timeout);
+        clearTimeout(timeout);
         console.log('EDC回傳ACK');
         return resolve('Receive ACK');
       // 收到NAK
@@ -86,17 +86,17 @@ async function sendTransactionData(port, transaction_data) {
       if (retry === 3) {
         // 移除監聽與timeout
         port.removeListener('data', ackHandler);
-        clearTimeout(ack_timeout);
+        clearTimeout(timeout);
         logger.warn('ackHandler', '端末機拒絕交易');
         return reject(new Error('EDC拒絕交易。'));
       }
       logger.warn('ackHandler', '端末機回傳NAK');
       retry += 1;
       receiveArray = [];
-      clearTimeout(ack_timeout);
+      clearTimeout(timeout);
       await wait(1000);
       console.log('retry');
-      await send(transaction_data);
+      await send(transactionData);
       ackTimeout();
     }
 
@@ -155,10 +155,10 @@ function ReceiveData() {
           clearTimeout(timeout);
           await sendAck();
           // 解析 response
-          const transaction_response = new Transaction();
-          transaction_response.parseResponse(responseStr);
-          logger.log(JSON.stringify(transaction_response, null, 4));
-          return resolve(transaction_response);
+          const transactionResponse = new Transaction();
+          transactionResponse.parseResponse(responseStr);
+          logger.log(JSON.stringify(transactionResponse, null, 4));
+          return resolve(transactionResponse);
         // LRC或資料長度錯誤
         }
         if (retry === 2) {
@@ -201,7 +201,7 @@ function send(data) {
 function sendAck() {
   return new Promise((resolve, reject) => {
     const ack = Buffer.from([6]);
-    data = Buffer.concat([ack, ack]);
+    const data = Buffer.concat([ack, ack]);
     port.write(data, (err) => {
       if (err) {
         logger.error('sendAck', err.message);
@@ -217,7 +217,7 @@ function sendAck() {
 function sendNak() {
   return new Promise((resolve, reject) => {
     const nak = Buffer.from([21]);
-    data = Buffer.concat([nak, nak]);
+    const data = Buffer.concat([nak, nak]);
     port.write(data, (err) => {
       if (err) {
         logger.error('sendNak', err.message);
@@ -282,34 +282,34 @@ function closePort() {
 // 回傳測試假資料
 function getMockResponse(transaction) {
   return new Promise((resolve, reject) => {
-    let file_name;
+    let fileName;
     console.log(transaction.data.transType);
     switch (transaction.data.transType) {
       case '01':
-        file_name = 'sale.txt';
+        fileName = 'sale.txt';
         break;
       case '02':
-        file_name = 'refund.txt';
+        fileName = 'refund.txt';
         break;
       case '30':
-        file_name = 'cancel.txt';
+        fileName = 'cancel.txt';
         break;
       case '04':
-        file_name = 'installment.txt';
+        fileName = 'installment.txt';
         break;
       default:
-        file_name = 'cancel.txt';
+        fileName = 'cancel.txt';
         break;
     }
 
-    const filePath = path_helper.join(`mock_data/${file_name}`);
+    const filePath = pathHelper.join(`mock_data/${fileName}`);
     console.log(filePath);
     fs.readFile(filePath, 'ascii', (err, responseStr) => {
-      const transaction_response = new Transaction();
-      transaction_response.parseResponse(responseStr);
+      const transactionResponse = new Transaction();
+      transactionResponse.parseResponse(responseStr);
       logger.log('回傳測試假資料');
-      logger.log(JSON.stringify(transaction_response, null, 4));
-      setTimeout(() => resolve(transaction_response));
+      logger.log(JSON.stringify(transactionResponse, null, 4));
+      setTimeout(() => resolve(transactionResponse));
     });
   });
 }
