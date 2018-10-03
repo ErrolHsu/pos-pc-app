@@ -46,6 +46,7 @@ app.get('/', (req, res) => {
       response_code: response.data.ecrResponseCode,
       transaction_data: response.data
     }
+    logger.log('交易完成')
     res.send(JSON.stringify(res_object));
   }).catch((err) => {
     logger.warn('Transaction Request' , `交易失敗 ${err.message}`);

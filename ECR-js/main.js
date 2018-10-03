@@ -135,13 +135,9 @@ function ReceiveData() {
 
         // 送NAK給EDC測試機時 會一次收到1206byte，不知道為何
         if (receiveBuffer.length === 1206) {
-          await sendAck();
-          retry += (receiveBuffer.length / 603) - 1
-          console.log(`retry is ${retry}`)
+          retry += (receiveBuffer.length / 603) - 1;
+          console.log(`retry is ${retry}`);
           receiveBuffer = receiveBuffer.slice(603, 1206);
-          console.log('=================================')
-          console.log(receiveBuffer)
-          console.log('=================================')
         }
 
         console.log(receiveBuffer.length)

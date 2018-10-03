@@ -21,7 +21,6 @@ class Transaction {
     logger.log('Preparing transaction data...');
     const data_str = this.dataToString();
     const data_buffer = Buffer.from(data_str, 'ascii');
-    // const data_buffer = await this.readIn();
 
     // 計算LRC
     let lrc = Transaction.calcLrc(Buffer.concat([data_buffer, ETX]));
