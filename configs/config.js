@@ -81,8 +81,6 @@ const config = convict({
 const env = config.get('env');
 const configPath = pathHelper.join(`configs/${env}.json`);
 
-console.log(`environment is ${env}`);
-
 // load & valid config
 config.loadFile(configPath);
 config.validate({ allowed: 'strict' });

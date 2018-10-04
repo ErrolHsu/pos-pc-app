@@ -7,6 +7,8 @@ const transactionHandler = require('./middleware/transaction_handler');
 const logger = require('./modules/logger');
 const SerialPortHelper = require('./modules/serial_port_helper');
 
+logger.log('App start')
+logger.log(`environment is ${config.get('env')}`);
 SerialPortHelper.printPortList();
 
 // parse request body json
@@ -37,6 +39,7 @@ app.use((err, req, res, next) => {
 app.get('/', (req, res) => {
   const { transaction } = req;
 
+  logger.log('開始交易...')
   ecr.call(transaction).then((response) => {
     const resObject = {
       response_code: response.data.ecrResponseCode,
@@ -57,5 +60,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(config.get('port'), () => {
-  console.log(`listening on port ${config.get('port')}`);
+  logger.log(`listening on port ${config.get('port')}`);
 });

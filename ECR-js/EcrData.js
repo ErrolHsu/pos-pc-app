@@ -2,7 +2,6 @@ const ECR_CONST = require('./EcrConst');
 const logger = require('../modules/logger');
 
 const STX = Buffer.from([2]);
-
 const ETX = Buffer.from([3]);
 
 const DATA_COLS = [

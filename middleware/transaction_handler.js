@@ -2,6 +2,7 @@ const { Transaction } = require('../ECR-js/EcrData');
 const logger = require('../modules/logger');
 
 function transactionHandler(req, res, next) {
+  logger.log('收到交易請求')
   // params = req.params
   const params = req.query;
   logger.log(JSON.stringify(params));
@@ -24,6 +25,7 @@ function generateTrasaction(params) {
       checkParams(['amount'], params);
       transaction.installment(params.amount, params.productCode, params.storeId);
       break;
+    // 退貨 //
     case 'refund':
       checkParams(['amount', 'approvalCode', 'referenceNo'], params);
       transaction.refund(params.amount, params.approvalCode, params.referenceNo, params.storeId);
